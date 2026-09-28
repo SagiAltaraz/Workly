@@ -1,19 +1,19 @@
 import type { Request, Response } from 'express'
-import { env } from '../config/env'
 import { pool } from '../db/pool'
+import { extractor } from '../services/extractor.service'
 import type { ApiResponse } from '../types/api'
+import { sendError, sendOk } from './respond'
 
 interface HealthData {
   status: 'up'
-  demoMode: boolean
+  modelConfigured: boolean
 }
 
 export async function getHealth(_req: Request, res: Response<ApiResponse<HealthData>>) {
   try {
     await pool.query('SELECT 1')
-    res.status(200).json({ ok: true, data: { status: 'up', demoMode: env.demoMode } })
+    sendOk(res, { status: 'up', modelConfigured: extractor !== null })
   } catch (error) {
-    console.error('health check failed', error)
-    res.status(503).json({ ok: false, error: 'Database is not reachable' })
+    sendError(res, error)
   }
 }

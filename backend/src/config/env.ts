@@ -10,6 +10,5 @@ export const env = {
   databaseUrl:
     process.env.DATABASE_URL ?? 'postgres://workly:workly@localhost:5432/workly',
   openaiApiKey,
-  // No key means the server answers from the recorded demo instead of calling the model.
-  demoMode: !openaiApiKey,
+  model: process.env.OPENAI_MODEL ?? 'gpt-4.1-mini',
 }

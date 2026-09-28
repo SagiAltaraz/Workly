@@ -1,0 +1,39 @@
+.quote-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-inline-start: 3px solid var(--primary);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--muted);
+  text-align: start;
+  font-size: 14px;
+}
+
+.quote-box:hover {
+  background: var(--primary-soft);
+}
+
+.quote-box-unverified {
+  border-inline-start-color: var(--orange);
+}
+
+.quote-box-icon {
+  flex: none;
+  margin-block-start: 2px;
+  color: var(--primary);
+}
+
+.quote-box-unverified .quote-box-icon {
+  color: var(--orange);
+}
+
+.quote-box-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

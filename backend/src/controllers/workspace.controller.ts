@@ -1,34 +1,34 @@
 import type { Request, Response } from 'express'
+import { NotFoundError } from '../errors'
 import * as workspaceService from '../services/workspace.service'
-import type { WorkspaceRecord } from '../db/workspace.repository'
 import type { ApiResponse } from '../types/api'
+import type { Workspace } from '../types/workspace'
+import { sendError, sendOk } from './respond'
 
-export async function createWorkspace(
-  _req: Request,
-  res: Response<ApiResponse<WorkspaceRecord>>,
-) {
+type WorkspaceResponse = Response<ApiResponse<Workspace>>
+
+export async function createWorkspace(_req: Request, res: WorkspaceResponse) {
   try {
-    const workspace = await workspaceService.createWorkspace()
-    res.status(201).json({ ok: true, data: workspace })
+    sendOk(res, workspaceService.createWorkspace(), 201)
   } catch (error) {
-    console.error('createWorkspace failed', error)
-    res.status(500).json({ ok: false, error: 'Could not create workspace' })
+    sendError(res, error)
   }
 }
 
-export async function getWorkspace(
-  req: Request<{ id: string }>,
-  res: Response<ApiResponse<WorkspaceRecord>>,
-) {
+export async function getWorkspace(req: Request<{ id: string }>, res: WorkspaceResponse) {
   try {
-    const workspace = await workspaceService.getWorkspace(req.params.id)
-    if (!workspace) {
-      res.status(404).json({ ok: false, error: 'Workspace not found' })
-      return
-    }
-    res.status(200).json({ ok: true, data: workspace })
+    const workspace = workspaceService.getWorkspace(req.params.id)
+    if (!workspace) throw new NotFoundError('ה-workspace לא נמצא')
+    sendOk(res, workspace)
   } catch (error) {
-    console.error('getWorkspace failed', error)
-    res.status(500).json({ ok: false, error: 'Could not load workspace' })
+    sendError(res, error)
+  }
+}
+
+export async function undoLastChange(req: Request<{ id: string }>, res: WorkspaceResponse) {
+  try {
+    sendOk(res, (await workspaceService.undoLast(req.params.id)).workspace)
+  } catch (error) {
+    sendError(res, error)
   }
 }

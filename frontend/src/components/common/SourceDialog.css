@@ -1,0 +1,78 @@
+.source-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-height: min(80vh, 720px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 24px 60px rgba(10, 14, 30, 0.3);
+}
+
+.source-dialog::backdrop {
+  background: rgba(12, 16, 30, 0.45);
+}
+
+.source-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.source-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 12px;
+  border-block-end: 1px solid var(--border);
+}
+
+.source-dialog-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.source-dialog-value {
+  margin-block-start: 2px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.source-dialog-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.source-dialog-text {
+  margin: 0;
+  padding: 18px 20px 22px;
+  overflow: auto;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.85;
+  white-space: pre-wrap;
+}
+
+.source-dialog-text mark {
+  padding: 2px 3px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--primary) 28%, transparent);
+  color: inherit;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.source-dialog-missing {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px 22px;
+  color: var(--muted);
+}
+
+.source-dialog-claimed {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--orange-soft);
+  color: var(--orange);
+}

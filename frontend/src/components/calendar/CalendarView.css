@@ -1,0 +1,257 @@
+.calendar {
+  overflow: hidden;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  min-height: 56px;
+  border-block-end: 1px solid var(--border);
+}
+
+.calendar-title {
+  flex: 1;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+.calendar-title-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  align-self: stretch;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+}
+
+.calendar-title-toggle:hover {
+  color: var(--text);
+}
+
+.calendar-chevron {
+  display: inline-grid;
+  transition: transform 0.2s;
+}
+
+.calendar-chevron-collapsed {
+  transform: rotate(90deg);
+}
+
+.calendar-collapsed-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-chevron {
+    transition: none;
+  }
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px 6px;
+  padding: 14px 16px 18px;
+}
+
+.calendar-weekday {
+  padding: 6px 0 10px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.calendar-day {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  height: 52px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  font-weight: 600;
+}
+
+.calendar-day:hover {
+  background: var(--surface-2);
+}
+
+.calendar-day-outside {
+  color: var(--gray);
+  font-weight: 400;
+}
+
+.calendar-day-reference {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.calendar-day-selected,
+.calendar-day-selected:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.calendar-dots {
+  display: flex;
+  gap: 3px;
+  height: 6px;
+}
+
+.calendar-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.calendar-day-selected .calendar-dots i {
+  background: #fff !important;
+}
+
+.calendar-day-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px 20px 20px;
+  border-block-start: 1px solid var(--border);
+}
+
+.calendar-day-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.calendar-day-title h3 {
+  font-size: 17px;
+}
+
+.calendar-day-title span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.calendar-day-date {
+  margin-inline-start: auto;
+}
+
+.calendar-empty {
+  color: var(--muted);
+}
+
+.calendar-events {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calendar-event {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-inline-end: 6px;
+  border-inline-start: 4px solid var(--event-color);
+  border-radius: 6px;
+}
+
+.calendar-event-main {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: start;
+}
+
+.calendar-event-main:hover {
+  background: var(--surface-2);
+}
+
+.calendar-event-time,
+.calendar-event-with,
+.calendar-event-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.calendar-event-warning {
+  color: var(--orange);
+}
+
+.calendar-export {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+.calendar-export:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.calendar-unscheduled {
+  padding: 14px 20px 18px;
+  border-block-start: 1px solid var(--border);
+}
+
+.calendar-unscheduled h3 {
+  margin-block-end: 8px;
+  font-size: 15px;
+}
+
+.calendar-unscheduled ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calendar-unscheduled li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+}
+
+.calendar-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.calendar-add:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}

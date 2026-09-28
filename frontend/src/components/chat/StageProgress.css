@@ -1,0 +1,71 @@
+.stage-progress {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.stage {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--muted);
+}
+
+.stage-icon {
+  display: inline-grid;
+  place-items: center;
+  align-self: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--gray-soft);
+}
+
+.stage-done {
+  color: var(--text);
+}
+
+.stage-done .stage-icon {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.stage-failed .stage-icon {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.stage-running {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.stage-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--primary-soft);
+  border-block-start-color: var(--primary);
+  border-radius: 50%;
+  animation: stage-spin 0.8s linear infinite;
+}
+
+.stage-detail {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@keyframes stage-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-spinner {
+    animation: none;
+  }
+}

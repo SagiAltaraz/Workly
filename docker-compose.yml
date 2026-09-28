@@ -17,6 +17,8 @@ services:
 
   backend:
     build: ./backend
+    ports:
+      - "4000:4000"
     environment:
       DATABASE_URL: postgres://workly:workly@db:5432/workly
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}

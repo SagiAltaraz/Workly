@@ -1,0 +1,161 @@
+.brief {
+  padding: 22px 26px 26px;
+}
+
+.brief-header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-block-end: 18px;
+}
+
+.brief-subtitle {
+  color: var(--muted);
+}
+
+.brief-empty {
+  padding: 26px 0;
+  color: var(--muted);
+}
+
+.brief-body {
+  display: grid;
+  gap: 24px;
+}
+
+.brief-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px 28px;
+  margin: 0;
+}
+
+.brief-field dt {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.brief-field dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 0;
+}
+
+.brief-value {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-weight: 600;
+  text-align: start;
+}
+
+button.brief-value:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.brief-value-missing {
+  color: var(--red);
+  font-weight: 500;
+}
+
+.brief-edit {
+  width: 26px;
+  height: 26px;
+  opacity: 0;
+}
+
+.brief-field:hover .brief-edit,
+.brief-edit:focus-visible {
+  opacity: 1;
+}
+
+.brief-block h3 {
+  margin-block-end: 8px;
+  font-size: 16px;
+}
+
+.brief-block ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.brief-note {
+  margin-block-end: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.brief-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.brief-item-assumed {
+  border: 1px dashed var(--amber);
+  background: var(--amber-soft);
+}
+
+.brief-item-missing {
+  border: 1px dashed var(--red);
+  background: var(--red-soft);
+}
+
+.brief-item-text {
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: start;
+}
+
+button.brief-item-text:hover {
+  color: var(--primary);
+}
+
+.brief-empty {
+  display: grid;
+  gap: 12px;
+}
+
+.brief-actions,
+.brief-block-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brief-block-header {
+  margin-block-end: 8px;
+}
+
+.brief-block-header h3 {
+  margin: 0;
+}
+
+.brief-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.brief-add:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}

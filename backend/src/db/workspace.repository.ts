@@ -1,32 +1,33 @@
+import type { Snapshot } from '../services/history'
+import type { Workspace } from '../types/workspace'
+import { normalizeStoredHistory, normalizeStoredWorkspace } from './normalize'
 import { pool } from './pool'
 
-export interface WorkspaceRecord {
-  id: string
-  state: Record<string, unknown>
-  updatedAt: string
-}
-
 interface WorkspaceRow {
-  id: string
-  state: Record<string, unknown>
-  updated_at: Date
+  state: unknown
+  history: unknown
 }
 
-function toRecord(row: WorkspaceRow): WorkspaceRecord {
-  return { id: row.id, state: row.state, updatedAt: row.updated_at.toISOString() }
+export interface StoredWorkspace {
+  workspace: Workspace
+  history: Snapshot[]
 }
 
-export async function createWorkspace(): Promise<WorkspaceRecord> {
-  const { rows } = await pool.query<WorkspaceRow>(
-    'INSERT INTO workspaces DEFAULT VALUES RETURNING id, state, updated_at',
+export async function upsertWorkspace(stored: StoredWorkspace): Promise<void> {
+  const { workspace, history } = stored
+  await pool.query(
+    `INSERT INTO workspaces (id, state, history, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (id) DO UPDATE
+       SET state = EXCLUDED.state, history = EXCLUDED.history, updated_at = EXCLUDED.updated_at`,
+    [workspace.id, JSON.stringify(workspace), JSON.stringify(history), workspace.createdAt, workspace.updatedAt],
   )
-  return toRecord(rows[0])
 }
 
-export async function findWorkspace(id: string): Promise<WorkspaceRecord | null> {
-  const { rows } = await pool.query<WorkspaceRow>(
-    'SELECT id, state, updated_at FROM workspaces WHERE id = $1',
-    [id],
-  )
-  return rows[0] ? toRecord(rows[0]) : null
+export async function loadAllWorkspaces(): Promise<StoredWorkspace[]> {
+  const { rows } = await pool.query<WorkspaceRow>('SELECT state, history FROM workspaces')
+  return rows.flatMap((row) => {
+    const workspace = normalizeStoredWorkspace(row.state)
+    return workspace ? [{ workspace, history: normalizeStoredHistory(row.history) }] : []
+  })
 }

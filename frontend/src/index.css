@@ -1,13 +1,107 @@
+@import '@fontsource/heebo/400.css';
+@import '@fontsource/heebo/500.css';
+@import '@fontsource/heebo/600.css';
+@import '@fontsource/heebo/700.css';
+
 :root {
-  font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
-  color: #1c1c28;
-  background: #f7f8fc;
+  --bg: #f5f6fb;
+  --surface: #ffffff;
+  --surface-2: #f3f4f8;
+  --border: #e6e8ef;
+  --text: #1b1e2b;
+  --muted: #6b7285;
+  --primary: #3f6cf4;
+  --primary-soft: #e8eeff;
+  --red: #ef4444;
+  --red-soft: #fdecec;
+  --orange: #f97316;
+  --orange-soft: #fff0e5;
+  --amber: #d99a06;
+  --amber-soft: #fff5dd;
+  --purple: #8b5cf6;
+  --purple-soft: #f1ebff;
+  --green: #10b981;
+  --green-soft: #e3f8f0;
+  --gray: #9aa1b2;
+  --gray-soft: #eef0f4;
+  --shadow: 0 1px 2px rgba(20, 24, 40, 0.05), 0 6px 18px rgba(20, 24, 40, 0.05);
+  --radius: 16px;
+  color-scheme: light;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-block-start: 88px;
+}
+
 body {
   margin: 0;
+  font-family: 'Heebo', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.icon-button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.card-surface {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }

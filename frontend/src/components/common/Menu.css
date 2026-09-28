@@ -1,0 +1,33 @@
+.menu {
+  position: relative;
+}
+
+.menu-list {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-start: 0;
+  z-index: 20;
+  min-width: 190px;
+  margin: 4px 0 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.menu-list button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: start;
+  font-size: 14px;
+}
+
+.menu-list button:hover {
+  background: var(--surface-2);
+}

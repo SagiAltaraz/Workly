@@ -1,0 +1,76 @@
+.meeting-form {
+  width: min(440px, calc(100vw - 32px));
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 24px 60px rgba(10, 14, 30, 0.3);
+}
+
+.meeting-form::backdrop {
+  background: rgba(12, 16, 30, 0.45);
+}
+
+.meeting-form form {
+  display: grid;
+  gap: 12px;
+}
+
+.meeting-form h2 {
+  font-size: 18px;
+}
+
+.meeting-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.meeting-form input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 15px;
+  color: var(--text);
+}
+
+.meeting-form-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.meeting-form-note {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.meeting-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.meeting-form-actions button {
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.meeting-form-cancel {
+  background: var(--surface-2);
+}
+
+.meeting-form-save {
+  background: var(--primary);
+  color: #fff;
+}
+
+.meeting-form-save:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

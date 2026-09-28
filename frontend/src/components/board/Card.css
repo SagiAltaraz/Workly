@@ -1,0 +1,125 @@
+.board-card {
+  --tone: var(--gray);
+  --tone-soft: var(--gray-soft);
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-inline-start: 5px solid var(--tone);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.tone-red { --tone: var(--red); --tone-soft: var(--red-soft); }
+.tone-orange { --tone: var(--orange); --tone-soft: var(--orange-soft); }
+.tone-amber { --tone: var(--amber); --tone-soft: var(--amber-soft); }
+.tone-blue { --tone: var(--primary); --tone-soft: var(--primary-soft); }
+.tone-gray { --tone: var(--gray); --tone-soft: var(--gray-soft); }
+.tone-green { --tone: var(--green); --tone-soft: var(--green-soft); }
+.tone-purple { --tone: var(--purple); --tone-soft: var(--purple-soft); }
+
+.board-card[draggable='true'] {
+  cursor: grab;
+}
+
+.board-card-done {
+  opacity: 0.72;
+}
+
+.board-card-done .board-card-title {
+  text-decoration: line-through;
+}
+
+.board-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.board-badge {
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.board-card-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.board-card-grip {
+  display: inline-grid;
+  place-items: center;
+  color: var(--gray);
+}
+
+.board-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.board-card-sub {
+  margin-block-start: -6px;
+  color: var(--muted);
+}
+
+.board-card-reasons,
+.board-card-warnings {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.board-card-reasons li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.board-card-reasons li::before {
+  content: '';
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gray);
+}
+
+.board-card-warnings li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--orange);
+}
+
+.board-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding-block-start: 10px;
+  border-block-start: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.board-card-footer:empty {
+  display: none;
+}
+
+.board-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

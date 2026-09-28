@@ -1,0 +1,42 @@
+.deleted-items {
+  margin-block-start: 6px;
+  padding: 10px 14px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.deleted-items summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.deleted-items ul {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deleted-items li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.deleted-items button {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.deleted-items button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
