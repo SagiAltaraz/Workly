@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+.venv/
+__pycache__/
+*.py[cod]
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# model caches
+.cache/
+.huggingface/
+models/
+
+# editors / os
+.DS_Store
+.idea/
+*.swp
+
+# python venv
+backend/.venv/
