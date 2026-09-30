@@ -29,10 +29,6 @@ export function addDays(iso: string, days: number): string {
   return dateToIso(new Date(fromIso(iso).getTime() + days * millisPerDay))
 }
 
-export function diffDays(fromIsoDate: string, toIsoDate: string): number {
-  return Math.round((fromIso(toIsoDate).getTime() - fromIso(fromIsoDate).getTime()) / millisPerDay)
-}
-
 // 0 = Sunday … 6 = Saturday, matching hebrewWeekdays.
 export function weekdayOf(iso: string): number {
   return fromIso(iso).getUTCDay()

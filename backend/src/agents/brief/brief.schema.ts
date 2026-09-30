@@ -30,4 +30,3 @@ export const briefSignalsSchema = z.object({
 })
 
 export type BriefSignal = z.infer<typeof briefSignalSchema>
-export type BriefSignals = z.infer<typeof briefSignalsSchema>

@@ -62,15 +62,6 @@ export function todayInIsrael(now: Date = new Date()): string {
   }).format(now)
 }
 
-export function clockInIsrael(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('he-IL', {
-    timeZone: 'Asia/Jerusalem',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(now)
-}
-
 // "היום", "מחר", "אתמול", otherwise the weekday and date.
 export function relativeLabel(iso: string, referenceDate: string): string {
   const offset = diffDays(referenceDate, iso)
