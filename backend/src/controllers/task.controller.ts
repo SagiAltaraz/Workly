@@ -22,6 +22,7 @@ const taskPatchSchema = z.object({
   dueDate: z.string().nullable().optional(),
   dueTime: z.string().nullable().optional(),
   conditionResolved: z.literal(true).optional(),
+  placement: z.enum(['today', 'tomorrow', 'week', 'later']).optional(),
 })
 
 export async function createTask(req: Request<{ id: string }>, res: WorkspaceResponse) {

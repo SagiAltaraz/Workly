@@ -7,10 +7,12 @@ import CalendarView from './components/calendar/CalendarView'
 import ChatPanel from './components/chat/ChatPanel'
 import FieldEditDialog from './components/common/FieldEditDialog'
 import SourceDialog from './components/common/SourceDialog'
+import MeetingDetail from './components/detail/MeetingDetail'
+import TaskDetail from './components/detail/TaskDetail'
 import Header from './components/layout/Header'
 import StatChips from './components/layout/StatChips'
 import QuestionsPanel from './components/questions/QuestionsPanel'
-import { AppContext, type AppContextValue, type EditRequest, type SourceRequest } from './context/AppContext'
+import { AppContext, type AppContextValue, type DetailRequest, type EditRequest, type SourceRequest } from './context/AppContext'
 import { useWorkspace } from './hooks/useWorkspace'
 
 export default function App() {
@@ -18,10 +20,11 @@ export default function App() {
   const [source, setSource] = useState<SourceRequest | null>(null)
   const [edit, setEdit] = useState<EditRequest | null>(null)
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [detail, setDetail] = useState<DetailRequest | null>(null)
   const [chatMinimized, setChatMinimized] = useState(false)
 
   const context = useMemo<AppContextValue>(
-    () => ({ app, showSource: setSource, requestEdit: setEdit }),
+    () => ({ app, showSource: setSource, requestEdit: setEdit, openDetail: setDetail }),
     [app],
   )
 
@@ -56,6 +59,8 @@ export default function App() {
         </main>
       </div>
 
+      {detail?.kind === 'task' && <TaskDetail key={detail.id} taskId={detail.id} onClose={() => setDetail(null)} />}
+      {detail?.kind === 'meeting' && <MeetingDetail key={detail.id} meetingId={detail.id} onClose={() => setDetail(null)} />}
       {calendarOpen && <CalendarDialog onClose={() => setCalendarOpen(false)} />}
       {source && <SourceDialog request={source} sources={app.workspace?.sources ?? []} onClose={() => setSource(null)} />}
       {edit && <FieldEditDialog request={edit} onClose={() => setEdit(null)} />}

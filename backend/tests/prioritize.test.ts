@@ -38,12 +38,28 @@ describe('prioritize — rules, first match wins', () => {
       ref,
     )
     expect(task.rule).toBe('p4Later')
-    expect(task.bucket).toBe('week')
+    expect(task.bucket).toBe('tomorrow')
   })
 
-  it('urgent wording without a hard time is P2, not P1', () => {
-    const task = prioritizeTask(makeTask({ dueDate: ref, signals: { urgency: 'דחוף' } }), ref)
+  it('a plain "important" without a hard time is P2, not P1', () => {
+    const task = prioritizeTask(makeTask({ dueDate: ref, signals: { urgency: 'חשוב' } }), ref)
     expect(task.rule).toBe('p2Today')
+  })
+
+  it('an explicit "urgent" or "the most important" is critical today even without an hour', () => {
+    for (const urgency of ['דחוף', 'זה הכי חשוב', 'חשוב מאוד', 'קריטי', 'לא לדחות']) {
+      const task = prioritizeTask(makeTask({ dueDate: ref, signals: { urgency } }), ref)
+      expect(task.rule, urgency).toBe('p1Critical')
+      expect(task.reason).toContain('דחוף מאוד')
+    }
+  })
+
+  it('strong urgency on a task for tomorrow is still not P1', () => {
+    expect(prioritizeTask(makeTask({ dueDate: '2026-09-24', signals: { urgency: 'דחוף' } }), ref).rule).toBe('p4Later')
+  })
+
+  it('"not urgent" cancels strong urgency wording', () => {
+    expect(prioritizeTask(makeTask({ dueDate: ref, signals: { urgency: 'דחוף', notUrgent: 'לא דחוף' } }), ref).rule).not.toBe('p1Critical')
   })
 
   it('P3 is checked before P2', () => {
@@ -89,6 +105,12 @@ describe('prioritize — rules, first match wins', () => {
 })
 
 describe('prioritize — buckets', () => {
+  it('splits the coming days into tomorrow and the rest of the week', () => {
+    expect(prioritizeTask(makeTask({ dueDate: '2026-09-24' }), ref).bucket).toBe('tomorrow')
+    expect(prioritizeTask(makeTask({ dueDate: '2026-09-25' }), ref).bucket).toBe('week')
+    expect(prioritizeTask(makeTask({ dueDate: '2026-09-30' }), ref).bucket).toBe('week')
+  })
+
   it('week is a rolling seven days after the reference date', () => {
     expect(prioritizeTask(makeTask({ dueDate: '2026-09-30' }), ref).bucket).toBe('week')
     expect(prioritizeTask(makeTask({ dueDate: '2026-10-01' }), ref).bucket).toBe('later')

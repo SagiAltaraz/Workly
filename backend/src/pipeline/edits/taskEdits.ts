@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { ValidationError } from '../../errors'
 import type { Task } from '../../types/task'
 import type { Workspace } from '../../types/workspace'
-import { todayInIsrael } from '../dateMath'
+import { addDays, todayInIsrael } from '../dateMath'
 import { missingField, userField } from '../fields'
 import { recompute } from '../recompute'
 import type { Change } from './change'
@@ -44,7 +44,10 @@ export function addTask(workspace: Workspace, input: NewTaskInput): Change {
       canWait: null,
       notUrgent: null,
       listedUnder: input.listedUnder,
+      dayPart: null,
     },
+    meetingLink: null,
+    deadline: { date: null, time: null, meetingId: null },
     done: false,
     deleted: false,
     blocked: false,
@@ -63,6 +66,29 @@ export interface TaskPatch {
   dueDate?: string | null
   dueTime?: string | null
   conditionResolved?: boolean
+  // Moves the task to a column of the board, as if it had been dragged there.
+  placement?: Placement
+}
+
+export type Placement = 'today' | 'tomorrow' | 'week' | 'later'
+
+const placementNames: Record<Placement, string> = {
+  today: 'היום',
+  tomorrow: 'מחר',
+  week: 'השבוע הקרוב',
+  later: 'בהמשך',
+}
+
+// Today and tomorrow are real dates. "This week" is a place without a day: the date is cleared and the
+// task is listed under the week. The person's move overrides what the text said about waiting.
+function placed(task: Task, placement: Placement, referenceDate: string): Task {
+  const date =
+    placement === 'today' ? referenceDate : placement === 'tomorrow' ? addDays(referenceDate, 1) : null
+  return {
+    ...task,
+    dueDate: date === null ? clearedField() : userField(date),
+    signals: { ...task.signals, canWait: null, listedUnder: placement === 'week' ? 'week' : null },
+  }
 }
 
 export function patchTask(workspace: Workspace, taskId: string, patch: TaskPatch): Change {
@@ -72,6 +98,11 @@ export function patchTask(workspace: Workspace, taskId: string, patch: TaskPatch
   const parts: string[] = []
   const settled: string[] = []
 
+  if (patch.placement !== undefined) {
+    task = placed(task, patch.placement, workspace.referenceDate ?? todayInIsrael())
+    parts.push(`הועברה אל ${placementNames[patch.placement]}`)
+    settled.push('dueDate')
+  }
   if (patch.title !== undefined) {
     task = { ...task, title: assertText(patch.title, 'שם המשימה') }
     parts.push(`שם ← "${task.title}"`)

@@ -11,6 +11,7 @@ export default function StatChips() {
 
   const chips = [
     { label: 'משימות להיום', count: board.today.filter((card) => card.kind === 'task').length, tone: 'blue', target: '#tasks' },
+    { label: 'בהמשך', count: board.later.filter((card) => card.kind === 'task').length, tone: 'gray', target: '#tasks' },
     { label: 'חסומות', count: board.blocked.filter((card) => card.kind === 'task').length, tone: 'orange', target: '#tasks' },
     { label: 'פגישות היום', count: board.today.filter((card) => card.kind === 'meeting').length, tone: 'gray', target: '#meetings' },
     { label: 'שאלות לבירור', count: workspace.questions.length, tone: 'red', target: '#questions' },

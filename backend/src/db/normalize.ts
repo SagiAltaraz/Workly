@@ -13,27 +13,50 @@ function asItems(list: unknown): unknown[] {
   })
 }
 
+function normalizeBrief(brief: Loose): Loose {
+  return {
+    id: randomUUID(),
+    ...brief,
+    deliverables: asItems(brief.deliverables),
+    constraints: asItems(brief.constraints),
+    suggestions: asItems(brief.suggestions),
+    missingDetails: asItems(brief.missingDetails),
+  }
+}
+
+// Older rows stored one `brief` object (or none); a workspace now holds a list of them.
+function asBriefs(state: Loose): unknown[] {
+  if (Array.isArray(state.briefs)) return state.briefs.map((brief) => normalizeBrief(brief as Loose))
+  const single = state.brief as Loose | null
+  return single ? [normalizeBrief(single)] : []
+}
+
 // Rows written by an earlier shape of the app are upgraded on load, so no stored workspace is lost.
 export function normalizeStoredWorkspace(raw: unknown): Workspace | null {
   const state = raw as Loose | null
   if (!state || typeof state.id !== 'string') return null
 
-  const brief = state.brief as Loose | null
+  const normalized = { ...state } as Loose
+  delete normalized.brief
+
   return {
-    ...(state as unknown as Workspace),
-    tasks: ((state.tasks as Loose[]) ?? []).map((task) => ({ deleted: false, ...task })) as Workspace['tasks'],
-    meetings: ((state.meetings as Loose[]) ?? []).map((meeting) => ({ deleted: false, ...meeting })) as Workspace['meetings'],
-    brief: brief
-      ? ({
-          ...brief,
-          deliverables: asItems(brief.deliverables),
-          constraints: asItems(brief.constraints),
-          suggestions: asItems(brief.suggestions),
-          missingDetails: asItems(brief.missingDetails),
-        } as unknown as Workspace['brief'])
-      : null,
-    contradictions: (state.contradictions as Workspace['contradictions']) ?? [],
+    ...(normalized as unknown as Workspace),
+    tasks: ((state.tasks as Loose[]) ?? []).map((task) => ({
+      deleted: false,
+      meetingLink: null,
+      deadline: { date: null, time: null, meetingId: null },
+      ...task,
+      signals: { dayPart: null, ...(task.signals as object) },
+    })) as Workspace['tasks'],
+    meetings: ((state.meetings as Loose[]) ?? []).map((meeting) => ({ deleted: false, dayPart: null, ...meeting })) as Workspace['meetings'],
+    briefs: asBriefs(state) as Workspace['briefs'],
+    // A contradiction on a brief field from before briefs had ids has nothing to point at; drop it
+    // rather than carry a target the rest of the code can no longer resolve.
+    contradictions: ((state.contradictions as Workspace['contradictions']) ?? []).filter(
+      (item) => item.target.type !== 'brief' || 'briefId' in item.target,
+    ),
     dismissedQuestionIds: (state.dismissedQuestionIds as string[]) ?? [],
+    cardOrder: (state.cardOrder as string[]) ?? [],
     activity: (state.activity as Workspace['activity']) ?? [],
     questions: (state.questions as Workspace['questions']) ?? [],
   }

@@ -3,6 +3,8 @@ import type { MeetingSignal } from '../agents/meetings/meetings.schema'
 import type { Meeting } from '../types/meeting'
 import { buildDueDate, buildTime, listedUnderOf } from './buildTasks'
 import { appearsInSource, missingField, sourcedField, type SourceContext } from './fields'
+import { dayPartOf } from './hebrewLexicon'
+import { dayFromClock, relativeFields } from './moments'
 import { normalizeText } from './normalize'
 import { findWeekday } from './parseDate'
 import { parseTimeRange } from './parseTime'
@@ -13,8 +15,11 @@ function meetingDate(
   signal: MeetingSignal,
   quote: string,
   referenceDate: string,
+  weekdayWritten: string | null,
 ): Field {
   if (signal.dateText) return buildDueDate(context, quote, signal.dateText, referenceDate)
+  // A weekday and no date ("on Thursday") is the next such day, counted by code from the reference date.
+  if (weekdayWritten) return buildDueDate(context, quote, weekdayWritten, referenceDate)
   // Listed under a "today" heading: the date is the reference date, derived from that heading.
   if (signal.sectionHeading && listedUnderOf(signal.sectionHeading) === 'today') {
     return sourcedField(context, {
@@ -52,14 +57,25 @@ export function buildMeetings(
         ? weekdayText
         : null
 
+    const relative = signal.dateText ? null : relativeFields(context, quote, signal.timeText)
+    const startTime = relative?.time ?? buildTime(context, quote, signal.timeText)
+    const dayPart = startTime.value === null && signal.timeText ? dayPartOf(normalizeText(signal.timeText)) : null
+    const stated = relative?.date ?? meetingDate(context, signal, quote, referenceDate, weekdayWritten)
+    // A meeting with an hour (or a part of the day) and no day at all is today, or tomorrow if it has passed.
+    const placedByHeading = signal.sectionHeading !== null && listedUnderOf(signal.sectionHeading) !== null
+    const date =
+      stated.value === null && stated.note === null && signal.timeText && !placedByHeading && (startTime.value !== null || dayPart !== null)
+        ? dayFromClock(context, quote, signal.timeText, referenceDate, { time: startTime.value, dayPart })
+        : stated
     return {
       id: randomUUID(),
       topic: normalizeText(signal.topic),
       quote: sourcedField(context, { value: quote, status: 'stated', quote, evidenceText: quote }),
       weekdayWritten,
-      date: meetingDate(context, signal, quote, referenceDate),
-      startTime: buildTime(context, quote, signal.timeText),
+      date,
+      startTime,
       endTime: endTimeField(context, quote, signal.timeText),
+      dayPart,
       participants: signal.participants
         .map(normalizeText)
         .filter((name) => name.length > 0 && appearsInSource(context, name)),

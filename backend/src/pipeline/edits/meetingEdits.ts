@@ -33,6 +33,7 @@ export function addMeeting(workspace: Workspace, input: NewMeetingInput): Change
     startTime: input.startTime !== null ? userField(assertTime(input.startTime)) : missingField(),
     endTime: input.endTime !== null ? userField(assertTime(input.endTime)) : missingField(),
     participants: cleanParticipants(input.participants),
+    dayPart: null,
     awaitingScheduling: false,
     weekdayMismatch: false,
     conflictsWith: [],

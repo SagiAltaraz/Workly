@@ -6,12 +6,12 @@ const ref = '2026-09-23' // a Wednesday
 
 describe('parseDate', () => {
   it('reads a full written date as explicit', () => {
-    expect(parseDate('ביום חמישי, 24.9.2026', ref)).toEqual({ date: '2026-09-24', kind: 'explicit' })
+    expect(parseDate('ביום חמישי, 24.9.2026', ref)).toMatchObject({ date: '2026-09-24', kind: 'explicit', corrections: [] })
   })
 
   it('infers the year when the text gives only day and month', () => {
-    expect(parseDate('עד 28.9', ref)).toEqual({ date: '2026-09-28', kind: 'inferred' })
-    expect(parseDate('ב-5.10', ref)).toEqual({ date: '2026-10-05', kind: 'inferred' })
+    expect(parseDate('עד 28.9', ref)).toMatchObject({ date: '2026-09-28', kind: 'inferred' })
+    expect(parseDate('ב-5.10', ref)).toMatchObject({ date: '2026-10-05', kind: 'inferred' })
   })
 
   it('resolves relative words against the reference date', () => {
@@ -23,7 +23,7 @@ describe('parseDate', () => {
   })
 
   it('resolves a bare weekday to its next occurrence', () => {
-    expect(parseDate('ביום שני', ref)).toEqual({ date: '2026-09-28', kind: 'inferred' })
+    expect(parseDate('ביום שני', ref)).toMatchObject({ date: '2026-09-28', kind: 'inferred' })
   })
 
   it('returns null for impossible or missing dates', () => {

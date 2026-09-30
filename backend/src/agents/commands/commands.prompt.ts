@@ -38,7 +38,8 @@ Fields of each command (use exactly these camelCase names):
   editTask and editMeeting, ONLY when the item is renamed, the new name. Otherwise null.
 - dateText: the NEW date words as written ("מחר", "יום שלישי", "24.9"), or null.
 - timeText: the NEW clock-time words as written, or null. Copy only the time words. Forms you will meet:
-  "11:00", "מ-10:00 עד 11:00", "בשעה 9", "בשעה 8 וחצי", "9 בבוקר", "8 בערב", "ב-9".
+  "11:00", "מ-10:00 עד 11:00", "בשעה 9", "בשעה 8 וחצי", "9 בבוקר", "8 בערב", "ב-9",
+  hours in words ("שמונה וחצי", "רבע לשמונה"), and a wait from now ("עוד שעה"). Keep spelling slips as written.
 - participants: people named as attending, as written; [] if none.
 
 Examples (shape only):

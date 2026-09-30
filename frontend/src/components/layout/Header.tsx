@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import { useClock } from '../../hooks/useClock'
-import { clockInIsrael, formatShort, todayInIsrael, weekdayNames, weekdayIndex } from '../../utils/isoDate'
-import { CalendarIcon, XIcon } from '../common/Icons'
+import { useToday } from '../../hooks/useToday'
+import { formatShort, weekdayNames, weekdayIndex } from '../../utils/isoDate'
+import { CalendarIcon, SparkleIcon, XIcon } from '../common/Icons'
 import './Header.css'
 
 const sections = [
@@ -44,15 +44,12 @@ function useActiveSection(): string {
 
 export default function Header({ onOpenCalendar }: HeaderProps) {
   const { app } = useApp()
-  const now = useClock()
+  const today = useToday()
   const active = useActiveSection()
   const picker = useRef<HTMLInputElement>(null)
-  const today = todayInIsrael(now)
   const workspace = app.workspace
 
   const reference = workspace?.referenceDate
-  const originLabel =
-    workspace?.referenceDateOrigin === 'text' ? 'לפי הטקסט' : workspace?.referenceDateOrigin === 'user' ? 'לפי בחירה' : 'היום בישראל'
 
   return (
     <header className="app-header">
@@ -68,36 +65,49 @@ export default function Header({ onOpenCalendar }: HeaderProps) {
       </nav>
 
       <div className="app-header-meta">
-        <span className="app-clock">
-          יום {weekdayNames[weekdayIndex(today)]}, {formatShort(today)} · {clockInIsrael(now)}
-        </span>
-
-        {reference && (
-          <span className="app-reference">
-            <button
-              type="button"
-              className="app-reference-button"
-              title="תאריך הייחוס שממנו מחושבים היום ומחר. לחיצה בוחרת תאריך לטקסט הבא"
-              onClick={() => picker.current?.showPicker?.()}
-            >
-              {app.userReferenceDate ? `בחירה שלך לטקסט הבא: ${formatShort(app.userReferenceDate)}` : `${originLabel}: ${formatShort(reference)}`}
-            </button>
-            {app.userReferenceDate && (
+        <span className="app-reference">
+          {/* One date: today. Clicking it picks another date for the next text. */}
+          <button
+            type="button"
+            className="app-reference-button"
+            title="לחיצה בוחרת תאריך אחר, שממנו יחושבו היום ומחר בטקסט הבא"
+            onClick={() => picker.current?.showPicker?.()}
+          >
+            יום {weekdayNames[weekdayIndex(today)]}, {formatShort(today)}
+          </button>
+          {/* Only said when the board is not on today: a text that named its own day, or a date picked by hand. */}
+          {app.userReferenceDate ? (
+            <>
+              <span className="app-reference-note">הטקסט הבא יחושב לפי {formatShort(app.userReferenceDate)}</span>
               <button type="button" className="icon-button app-reference-clear" aria-label="ביטול בחירת תאריך" onClick={() => app.setUserReferenceDate(null)}>
                 <XIcon size={14} />
               </button>
-            )}
-            <input
-              ref={picker}
-              type="date"
-              className="visually-hidden"
-              tabIndex={-1}
-              aria-label="בחירת תאריך ייחוס"
-              value={app.userReferenceDate ?? reference}
-              onChange={(event) => app.setUserReferenceDate(event.target.value || null)}
-            />
-          </span>
-        )}
+            </>
+          ) : (
+            reference &&
+            reference !== today && <span className="app-reference-note">הלוח מציג את {formatShort(reference)} (לפי הטקסט)</span>
+          )}
+          <input
+            ref={picker}
+            type="date"
+            className="visually-hidden"
+            tabIndex={-1}
+            aria-label="בחירת תאריך ייחוס"
+            value={app.userReferenceDate ?? reference ?? today}
+            onChange={(event) => app.setUserReferenceDate(event.target.value || null)}
+          />
+        </span>
+
+        <button
+          type="button"
+          className={`header-demo-button${app.isDemo ? ' header-demo-button-active' : ''}`}
+          disabled={app.demoLoading}
+          title={app.isDemo ? 'חזרה למצב שלך' : 'טעינת דמו: שלושת הטקסטים של המטלה, דרך המודל האמיתי'}
+          onClick={() => void app.toggleDemo()}
+        >
+          <SparkleIcon size={16} />
+          {app.demoLoading ? 'טוען…' : app.isDemo ? 'יציאה מדמו' : 'דמו'}
+        </button>
 
         <button type="button" className="header-calendar-button" onClick={onOpenCalendar}>
           <CalendarIcon size={17} />

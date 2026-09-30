@@ -1,4 +1,4 @@
-import type { BriefSignals } from './brief/brief.schema'
+import type { BriefSignal } from './brief/brief.schema'
 import type { CommandSignal } from './commands/commands.schema'
 import type { MeetingSignal } from './meetings/meetings.schema'
 import type { TaskSignal } from './tasks/tasks.schema'
@@ -11,7 +11,8 @@ export interface ExtractionInput {
 // so the whole deterministic half runs with no network call and no API key.
 export interface Extractor {
   extractCommands(input: ExtractionInput): Promise<CommandSignal[]>
-  extractBrief(input: ExtractionInput): Promise<BriefSignals>
+  // One entry per distinct brief found in the text; [] when there is none.
+  extractBrief(input: ExtractionInput): Promise<BriefSignal[]>
   extractTasks(input: ExtractionInput): Promise<TaskSignal[]>
   extractMeetings(input: ExtractionInput): Promise<MeetingSignal[]>
 }

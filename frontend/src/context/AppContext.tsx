@@ -17,10 +17,17 @@ export interface SourceRequest {
   label: string
 }
 
+// A card opened in full, to read and to change its fields.
+export interface DetailRequest {
+  kind: 'task' | 'meeting'
+  id: string
+}
+
 export interface AppContextValue {
   app: WorkspaceApp
   showSource: (request: SourceRequest) => void
   requestEdit: (request: EditRequest) => void
+  openDetail: (request: DetailRequest) => void
 }
 
 export const AppContext = createContext<AppContextValue | null>(null)

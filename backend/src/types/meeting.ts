@@ -1,4 +1,5 @@
 import type { Field } from './provenance'
+import type { DayPart } from './task'
 
 export interface Meeting {
   id: string
@@ -9,6 +10,7 @@ export interface Meeting {
   startTime: Field
   endTime: Field
   participants: string[]
+  dayPart: DayPart | null
   deleted: boolean
   awaitingScheduling: boolean
   weekdayMismatch: boolean

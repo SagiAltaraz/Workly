@@ -26,11 +26,13 @@ export default function FactChip({ field, label, compact = false }: FactChipProp
   const { showSource } = useApp()
   const chip = chipOf(field)
   const className = `fact-chip fact-chip-${chip.kind}${compact ? ' fact-chip-compact' : ''}`
+  // How a value was read (a corrected spelling slip, for instance) is part of the explanation.
+  const explanation = field.note && field.status !== 'missing' ? `${chip.hint}. ${field.note}` : chip.hint
   const canShowSource = field.quote !== null || field.span !== null
 
   if (!canShowSource) {
     return (
-      <span className={className} title={chip.hint}>
+      <span className={className} title={explanation}>
         {chip.text}
       </span>
     )
@@ -39,7 +41,7 @@ export default function FactChip({ field, label, compact = false }: FactChipProp
     <button
       type="button"
       className={className}
-      title={`${chip.hint}. לחיצה מציגה את המקור בטקסט`}
+      title={`${explanation}. לחיצה מציגה את המקור בטקסט`}
       onClick={() => showSource({ field, label })}
     >
       {chip.text}

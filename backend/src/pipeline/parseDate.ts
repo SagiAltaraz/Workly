@@ -1,10 +1,13 @@
 import { addDays, hebrewWeekdays, isValidCalendarDate, toIso, weekdayOf } from './dateMath'
+import { correctDateWords, type Correction } from './hebrewLexicon'
 
 export interface ParsedDate {
   date: string
   // 'explicit' is a full written date; a missing year, a relative word or a weekday
   // name means the code had to derive it from the reference date.
   kind: 'explicit' | 'inferred'
+  // Words read despite a slip of a letter ("מחרר" as "מחר"); the date then always counts as inferred.
+  corrections: Correction[]
 }
 
 const weekdayRegex = new RegExp(
@@ -14,7 +17,7 @@ const weekdayRegex = new RegExp(
 
 // Index into hebrewWeekdays (0 = Sunday), from wording like "ביום חמישי".
 export function findWeekday(text: string): number | null {
-  const match = weekdayRegex.exec(text)
+  const match = weekdayRegex.exec(correctDateWords(text).text)
   return match ? hebrewWeekdays.indexOf(match[1] as (typeof hebrewWeekdays)[number]) : null
 }
 
@@ -22,7 +25,14 @@ function expandYear(year: number): number {
   return year < 100 ? 2000 + year : year
 }
 
-export function parseDate(text: string, referenceDate: string): ParsedDate | null {
+export function parseDate(original: string, referenceDate: string): ParsedDate | null {
+  const { text, corrections } = correctDateWords(original)
+  const found = readDate(text, referenceDate)
+  if (!found) return null
+  return corrections.length > 0 ? { ...found, kind: 'inferred', corrections } : { ...found, corrections }
+}
+
+function readDate(text: string, referenceDate: string): Omit<ParsedDate, 'corrections'> | null {
   const full = /(?<![\d.])(\d{1,2})[./](\d{1,2})[./](\d{2}|\d{4})(?!\d)/u.exec(text)
   if (full) {
     const [day, month, year] = [Number(full[1]), Number(full[2]), expandYear(Number(full[3]))]

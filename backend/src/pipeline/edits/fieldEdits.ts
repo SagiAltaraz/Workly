@@ -17,10 +17,15 @@ function checkedValue(key: string, value: string): string {
   return cleaned
 }
 
+function findBrief(workspace: Workspace, briefId: string) {
+  const brief = workspace.briefs.find((item) => item.id === briefId)
+  if (!brief) throw new NotFoundError('הבריף לא נמצא')
+  return brief
+}
+
 export function readField(workspace: Workspace, target: FieldTarget): Field {
   if (target.type === 'brief') {
-    if (!workspace.brief) throw new NotFoundError('אין בריף ב-workspace')
-    return workspace.brief.fields[target.key]
+    return findBrief(workspace, target.briefId).fields[target.key]
   }
   if (target.type === 'task') {
     const task = workspace.tasks.find((item) => item.id === target.id)
@@ -34,8 +39,13 @@ export function readField(workspace: Workspace, target: FieldTarget): Field {
 
 function writeField(workspace: Workspace, target: FieldTarget, field: Field): Workspace {
   readField(workspace, target)
-  if (target.type === 'brief' && workspace.brief) {
-    return { ...workspace, brief: { ...workspace.brief, fields: { ...workspace.brief.fields, [target.key]: field } } }
+  if (target.type === 'brief') {
+    return {
+      ...workspace,
+      briefs: workspace.briefs.map((brief) =>
+        brief.id === target.briefId ? { ...brief, fields: { ...brief.fields, [target.key]: field } } : brief,
+      ),
+    }
   }
   if (target.type === 'task') {
     return {
@@ -54,16 +64,23 @@ function writeField(workspace: Workspace, target: FieldTarget, field: Field): Wo
   return workspace
 }
 
+function sameTarget(a: FieldTarget, b: FieldTarget): boolean {
+  if (a.type !== b.type || a.key !== b.key) return false
+  if (a.type === 'brief' && b.type === 'brief') return a.briefId === b.briefId
+  if (a.type !== 'brief' && b.type !== 'brief') return a.id === b.id
+  return false
+}
+
 function withoutContradiction(workspace: Workspace, target: FieldTarget): Workspace {
-  const same = (item: Workspace['contradictions'][number]) =>
-    item.target.type === target.type &&
-    item.target.key === target.key &&
-    ('id' in item.target ? item.target.id : null) === ('id' in target ? target.id : null)
-  return { ...workspace, contradictions: workspace.contradictions.filter((item) => !same(item)) }
+  return { ...workspace, contradictions: workspace.contradictions.filter((item) => !sameTarget(item.target, target)) }
 }
 
 function ownerOf(workspace: Workspace, target: FieldTarget): string {
-  if (target.type === 'brief') return 'בריף'
+  if (target.type === 'brief') {
+    const brief = workspace.briefs.find((item) => item.id === target.briefId)
+    const name = brief?.fields.client.value ?? brief?.fields.campaign.value
+    return name ? `בריף "${name}"` : 'בריף'
+  }
   if (target.type === 'task') return `משימה "${workspace.tasks.find((task) => task.id === target.id)?.title ?? ''}"`
   return `פגישה "${workspace.meetings.find((meeting) => meeting.id === target.id)?.topic ?? ''}"`
 }

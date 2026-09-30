@@ -83,16 +83,16 @@ function printResult(workspace: Workspace): void {
   console.log('\n══════════ תוצאה ══════════')
   console.log(`תאריך ייחוס: ${workspace.referenceDate} (${workspace.referenceDateOrigin})`)
 
-  if (workspace.brief) {
-    console.log('\nבריף')
-    for (const [key, field] of Object.entries(workspace.brief.fields)) {
+  const live = (items: { field: { value: string | null; verified: boolean }; deleted: boolean }[]) => items.filter((item) => !item.deleted)
+  for (const brief of workspace.briefs) {
+    console.log(`\nבריף (${brief.fields.client.value ?? brief.fields.campaign.value ?? 'ללא שם'})`)
+    for (const [key, field] of Object.entries(brief.fields)) {
       const mark = field.verified ? '✓' : field.status === 'missing' ? '?' : '!'
       console.log(`  ${mark} ${key.padEnd(10)} [${field.status}] ${field.value ?? '-'}`)
     }
-    const live = (items: { field: { value: string | null; verified: boolean }; deleted: boolean }[]) => items.filter((item) => !item.deleted)
-    live(workspace.brief.deliverables).forEach(({ field: f }) => console.log(`  • תוצר: ${f.value}${f.verified ? '' : '  (לא מאומת)'}`))
-    live(workspace.brief.constraints).forEach(({ field: f }) => console.log(`  • תנאי: ${f.value}${f.verified ? '' : '  (לא מאומת)'}`))
-    live(workspace.brief.suggestions).forEach(({ field: f }) => console.log(`  • הצעה (הנחה): ${f.value}`))
+    live(brief.deliverables).forEach(({ field: f }) => console.log(`  • תוצר: ${f.value}${f.verified ? '' : '  (לא מאומת)'}`))
+    live(brief.constraints).forEach(({ field: f }) => console.log(`  • תנאי: ${f.value}${f.verified ? '' : '  (לא מאומת)'}`))
+    live(brief.suggestions).forEach(({ field: f }) => console.log(`  • הצעה (הנחה): ${f.value}`))
   }
 
   console.log('\nמשימות')

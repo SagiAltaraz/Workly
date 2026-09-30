@@ -55,3 +55,22 @@ export function timeToMinutes(time: string): number {
 export function formatTime(hours: number, minutes: number): string {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
 }
+
+// The date and the minutes since midnight in Israel at a given moment, from the real clock and not
+// from the server's own timezone.
+export function israelClock(now: Date = new Date()): { date: string; minutes: number } {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now)
+  const pick = (type: string) => Number(parts.find((part) => part.type === type)?.value)
+  return {
+    date: toIso(pick('year'), pick('month'), pick('day')),
+    minutes: pick('hour') * 60 + pick('minute'),
+  }
+}

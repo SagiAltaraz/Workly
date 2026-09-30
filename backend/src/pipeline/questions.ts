@@ -57,33 +57,40 @@ function fieldProblem(
   return null
 }
 
+// The brief's own label, so a question about it says which one when there is more than one.
+function briefLabel(brief: Brief): string {
+  const name = brief.fields.client.value ?? brief.fields.campaign.value
+  return name ? `בריף "${name}"` : 'בריף'
+}
+
 function briefQuestions(brief: Brief): Question[] {
   const found: Question[] = []
-  for (const key of requiredBriefFields) {
-    if (brief.fields[key].value === null && brief.fields[key].note === null) {
+  const owner = briefLabel(brief)
+  for (const fieldKey of requiredBriefFields) {
+    if (brief.fields[fieldKey].value === null && brief.fields[fieldKey].note === null) {
       found.push(
-        question('missingField', `בבריף לא צוין: ${briefFieldLabels[key]}. מה הערך?`, 'brief', null, key),
+        question('missingField', `${owner}: לא צוין ${briefFieldLabels[fieldKey]}. מה הערך?`, 'brief', brief.id, fieldKey),
       )
     }
   }
   const live = (items: BriefItem[]) => items.filter((item) => !item.deleted)
   if (live(brief.deliverables).length === 0) {
-    found.push(question('missingField', 'בבריף לא צוינו תוצרים להכנה. מה צריך להכין?', 'brief', null, 'deliverables'))
+    found.push(question('missingField', `${owner}: לא צוינו תוצרים להכנה. מה צריך להכין?`, 'brief', brief.id, 'deliverables'))
   }
   for (const detail of live(brief.missingDetails)) {
-    found.push(question('missingField', `חסר בבריף: ${detail.field.value}`, 'brief', null, `missingDetail:${detail.id}`))
+    found.push(question('missingField', `חסר ב${owner}: ${detail.field.value}`, 'brief', brief.id, `missingDetail:${detail.id}`))
   }
 
   const entries: [string, Field][] = [
     ...(Object.entries(brief.fields) as [keyof typeof briefFieldLabels, Field][]).map(
-      ([key, field]) => [key, field] as [string, Field],
+      ([fieldKey, field]) => [fieldKey, field] as [string, Field],
     ),
     ...live(brief.deliverables).map((item) => [`deliverable:${item.id}`, item.field] as [string, Field]),
     ...live(brief.constraints).map((item) => [`constraint:${item.id}`, item.field] as [string, Field]),
   ]
-  for (const [key, field] of entries) {
-    const label = key in briefFieldLabels ? briefFieldLabels[key as keyof typeof briefFieldLabels] : 'בבריף'
-    const problem = fieldProblem(field, label, 'brief', null, key)
+  for (const [fieldKey, field] of entries) {
+    const label = fieldKey in briefFieldLabels ? `${owner} (${briefFieldLabels[fieldKey as keyof typeof briefFieldLabels]})` : owner
+    const problem = fieldProblem(field, label, 'brief', brief.id, fieldKey)
     if (problem) found.push(problem)
   }
   return found
@@ -96,7 +103,7 @@ function actualWeekday(date: string): string {
 export function deriveQuestions(workspace: Workspace): Question[] {
   const found: Question[] = []
 
-  if (workspace.brief) found.push(...briefQuestions(workspace.brief))
+  for (const brief of workspace.briefs) found.push(...briefQuestions(brief))
 
   for (const task of workspace.tasks.filter((item) => !item.deleted)) {
     const label = `משימה "${task.title}"`
@@ -163,14 +170,17 @@ export function deriveQuestions(workspace: Workspace): Question[] {
         ? `משימה "${workspace.tasks.find((task) => task.id === target.id)?.title ?? ''}"`
         : target.type === 'meeting'
           ? `פגישה "${workspace.meetings.find((meeting) => meeting.id === target.id)?.topic ?? ''}"`
-          : 'הבריף'
+          : (() => {
+              const found = workspace.briefs.find((brief) => brief.id === target.briefId)
+              return found ? briefLabel(found) : 'בריף'
+            })()
     const label = labelOfTarget(target)
     found.push({
       id: contradiction.id,
       kind: 'contradiction',
       text: `${owner} (${label}): נמצאו שני ערכים שונים בטקסטים שונים. איזה נכון?`,
       targetType: contradiction.target.type,
-      targetId: contradiction.target.type === 'brief' ? null : contradiction.target.id,
+      targetId: contradiction.target.type === 'brief' ? contradiction.target.briefId : contradiction.target.id,
       field: contradiction.target.key,
       candidates: {
         existing: contradiction.existing.value ?? '',

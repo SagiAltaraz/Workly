@@ -1,0 +1,24 @@
+.source-excerpt {
+  max-height: 180px;
+  margin: 0;
+  padding: 12px 14px;
+  overflow: auto;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.source-excerpt mark {
+  padding: 1px 3px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--primary) 28%, transparent);
+  color: inherit;
+}
+
+.source-excerpt-none {
+  color: var(--muted);
+  font-size: 14px;
+}

@@ -5,6 +5,8 @@ import { normalizeText } from './normalize'
 export interface SourceContext {
   inputId: string
   text: string
+  // The moment the text arrived; "in an hour" is counted from it.
+  now?: Date
 }
 
 export function missingField(note: string | null = null): Field {
@@ -24,6 +26,8 @@ interface SourcedInput {
   status: Extract<FactStatus, 'stated' | 'inferred'>
   quote: string
   evidenceText: string
+  // How the value was read, when it took more than copying (for instance a corrected spelling slip).
+  note?: string | null
 }
 
 // A value is only verified when code found its quote in the source AND the words it was
@@ -39,7 +43,7 @@ export function sourcedField(context: SourceContext, input: SourcedInput): Field
     span,
     verified: span !== null && evidenceInQuote,
     editedByUser: false,
-    note: null,
+    note: input.note ?? null,
   }
 }
 

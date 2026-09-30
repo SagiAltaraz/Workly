@@ -1,4 +1,4 @@
-import type { BriefSignals } from '../agents/brief/brief.schema'
+import type { BriefSignal } from '../agents/brief/brief.schema'
 import { randomUUID } from 'node:crypto'
 import type { Brief, BriefFieldKey, BriefItem } from '../types/brief'
 import type { Field } from '../types/provenance'
@@ -28,31 +28,30 @@ function dateField(
   })
 }
 
-// Returns null when the text holds no brief at all, so an empty brief never shows up.
-export function buildBrief(
-  context: SourceContext,
-  signals: BriefSignals,
-  referenceDate: string,
-): Brief | null {
-  if (!signals.containsBrief) return null
-
+function buildOneBrief(context: SourceContext, signal: BriefSignal, referenceDate: string): Brief {
   const fields: Record<BriefFieldKey, Field> = {
-    client: textField(context, signals.client),
-    campaign: textField(context, signals.campaign),
-    message: textField(context, signals.message),
-    audience: textField(context, signals.audience),
-    tone: textField(context, signals.tone),
-    deadline: dateField(context, signals.deadline, referenceDate),
-    launchDate: dateField(context, signals.launchDate, referenceDate),
+    client: textField(context, signal.client),
+    campaign: textField(context, signal.campaign),
+    message: textField(context, signal.message),
+    audience: textField(context, signal.audience),
+    tone: textField(context, signal.tone),
+    deadline: dateField(context, signal.deadline, referenceDate),
+    launchDate: dateField(context, signal.launchDate, referenceDate),
   }
 
   const item = (field: Field): BriefItem => ({ id: randomUUID(), field, deleted: false })
   const usable = (field: Field) => field.value !== null
   return {
+    id: randomUUID(),
     fields,
-    deliverables: signals.deliverables.map((entry) => textField(context, entry)).filter(usable).map(item),
-    constraints: signals.constraints.map((entry) => textField(context, entry)).filter(usable).map(item),
-    suggestions: signals.suggestions.map((text) => item(assumedField(normalizeText(text)))),
-    missingDetails: signals.missingDetails.map((text) => item({ ...missingField(), value: normalizeText(text) })),
+    deliverables: signal.deliverables.map((entry) => textField(context, entry)).filter(usable).map(item),
+    constraints: signal.constraints.map((entry) => textField(context, entry)).filter(usable).map(item),
+    suggestions: signal.suggestions.map((text) => item(assumedField(normalizeText(text)))),
+    missingDetails: signal.missingDetails.map((text) => item({ ...missingField(), value: normalizeText(text) })),
   }
+}
+
+// One brief per distinct client request the agent found; [] when the text held none.
+export function buildBriefs(context: SourceContext, signals: BriefSignal[], referenceDate: string): Brief[] {
+  return signals.map((signal) => buildOneBrief(context, signal, referenceDate))
 }

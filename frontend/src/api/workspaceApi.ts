@@ -52,6 +52,8 @@ export interface TaskPatch {
   dueDate?: string | null
   dueTime?: string | null
   conditionResolved?: true
+  // Moves the task to a column of the board, as a drag would.
+  placement?: 'today' | 'tomorrow' | 'week' | 'later'
 }
 
 export interface NewMeeting {
@@ -80,7 +82,11 @@ const base = (id: string) => `/api/workspaces/${id}`
 export const workspaceApi = {
   health: () => request<Health>('/api/health'),
   create: () => request<Workspace>('/api/workspaces', jsonInit('POST')),
+  // The one demo workspace, seeded from the assignment's own texts on first call and cached after that.
+  demo: () => request<Workspace>('/api/demo', jsonInit('POST')),
   get: (id: string) => request<Workspace>(base(id)),
+  setCardOrder: (id: string, ids: string[]) =>
+    request<Workspace>(`${base(id)}/order`, jsonInit('PUT', { ids })),
   undo: (id: string) => request<Workspace>(`${base(id)}/undo`, jsonInit('POST')),
 
   addTask: (id: string, task: NewTask) => request<Workspace>(`${base(id)}/tasks`, jsonInit('POST', task)),
@@ -97,10 +103,12 @@ export const workspaceApi = {
   restoreMeeting: (id: string, meetingId: string) =>
     request<Workspace>(`${base(id)}/meetings/${meetingId}/restore`, jsonInit('POST')),
 
-  patchBriefField: (id: string, key: BriefFieldKey, value: string | null) =>
-    request<Workspace>(`${base(id)}/brief/fields/${key}`, jsonInit('PATCH', { value })),
-  addBriefItem: (id: string, list: 'deliverables' | 'constraints', text: string) =>
-    request<Workspace>(`${base(id)}/brief/items`, jsonInit('POST', { list, text })),
+  addBrief: (id: string) => request<Workspace>(`${base(id)}/brief`, jsonInit('POST')),
+  patchBriefField: (id: string, briefId: string, key: BriefFieldKey, value: string | null) =>
+    request<Workspace>(`${base(id)}/brief/${briefId}/fields/${key}`, jsonInit('PATCH', { value })),
+  // briefId null starts a brand new brief with this as its first item (the empty state's own buttons).
+  addBriefItem: (id: string, briefId: string | null, list: 'deliverables' | 'constraints', text: string) =>
+    request<Workspace>(`${base(id)}/brief/${briefId ? `${briefId}/items` : 'items'}`, jsonInit('POST', { list, text })),
   editBriefItem: (id: string, itemId: string, text: string) =>
     request<Workspace>(`${base(id)}/brief/items/${itemId}`, jsonInit('PATCH', { text })),
   deleteBriefItem: (id: string, itemId: string) =>

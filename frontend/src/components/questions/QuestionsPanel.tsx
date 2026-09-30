@@ -33,13 +33,15 @@ function answerFor(question: Question, workspace: Workspace, edit: ReturnType<ty
   if (!field) return null
 
   if (question.targetType === 'brief') {
+    const brief = workspace.briefs.find((item) => item.id === question.targetId)
+    if (!brief) return null
     if (briefKeys.includes(field as BriefFieldKey)) {
       const key = field as BriefFieldKey
-      const current = workspace.brief?.fields[key].value ?? null
-      return { label: current ? 'תיקון' : 'השלמה', run: () => edit.briefField(key, current) }
+      const current = brief.fields[key].value
+      return { label: current ? 'תיקון' : 'השלמה', run: () => edit.briefField(brief.id, key, current) }
     }
     if (field.startsWith('missingDetail:')) {
-      const item = workspace.brief?.missingDetails.find((entry) => entry.id === field.slice('missingDetail:'.length))
+      const item = brief.missingDetails.find((entry) => entry.id === field.slice('missingDetail:'.length))
       return item ? { label: 'מענה', run: () => edit.missingDetail(item) } : null
     }
     return null

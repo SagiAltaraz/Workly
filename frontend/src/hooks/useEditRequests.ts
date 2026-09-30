@@ -58,13 +58,13 @@ export function useEditRequests() {
       })
     },
 
-    briefField: (key: BriefFieldKey, currentValue: string | null) =>
+    briefField: (briefId: string, key: BriefFieldKey, currentValue: string | null) =>
       open({
         label: briefFieldLabels[key],
         currentValue,
         kind: briefDateKeys.includes(key) ? 'date' : 'text',
-        save: (value) => app.patchBriefField(key, value),
-        clear: () => app.patchBriefField(key, null),
+        save: (value) => app.patchBriefField(briefId, key, value),
+        clear: () => app.patchBriefField(briefId, key, null),
       }),
 
     briefItem: (item: BriefItem, noun: string) =>
@@ -75,12 +75,13 @@ export function useEditRequests() {
         save: (value) => app.editBriefItem(item.id, value),
       }),
 
-    newBriefItem: (list: 'deliverables' | 'constraints') =>
+    // briefId null starts a brand new brief (the empty state's own "+ תוצר / + תנאי" buttons).
+    newBriefItem: (briefId: string | null, list: 'deliverables' | 'constraints') =>
       open({
         label: list === 'deliverables' ? 'תוצר חדש' : 'תנאי חדש',
         currentValue: null,
         kind: 'text',
-        save: (value) => app.addBriefItem(list, value),
+        save: (value) => app.addBriefItem(briefId, list, value),
       }),
 
     missingDetail: (item: BriefItem) =>

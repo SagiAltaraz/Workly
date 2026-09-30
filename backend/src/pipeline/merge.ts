@@ -5,7 +5,7 @@ import type { Task } from '../types/task'
 import type { Contradiction, FieldTarget, Workspace } from '../types/workspace'
 
 export interface Extraction {
-  brief: Brief | null
+  briefs: Brief[]
   tasks: Task[]
   meetings: Meeting[]
 }
@@ -36,7 +36,7 @@ function mergeField(existing: Field, incoming: Field): MergedField {
 function contradictionOf(target: FieldTarget, existing: Field, incoming: Field): Contradiction {
   const id =
     target.type === 'brief'
-      ? `contradiction:brief:${target.key}`
+      ? `contradiction:brief:${target.briefId}:${target.key}`
       : `contradiction:${target.type}:${target.id}:${target.key}`
   return { id, target, existing, incoming }
 }
@@ -54,13 +54,19 @@ function addUnique(existing: BriefItem[], incoming: BriefItem[]): BriefItem[] {
   return [...existing, ...added]
 }
 
-function mergeBrief(
-  existing: Brief | null,
-  incoming: Brief | null,
-): { brief: Brief | null; contradictions: Contradiction[] } {
-  if (!incoming) return { brief: existing, contradictions: [] }
-  if (!existing) return { brief: incoming, contradictions: [] }
+// Two briefs are the same request when they agree on the client, the campaign, or the message -
+// whichever of those either side actually stated. Two briefs that state nothing in common (both
+// blank on all three) are treated as different, so an incomplete brief never silently absorbs an
+// unrelated one; pasting the same text twice still matches, since at least one of these repeats.
+function sameBrief(a: Brief, b: Brief): boolean {
+  return (['client', 'campaign', 'message'] as const).some((briefKey) => {
+    const left = a.fields[briefKey].value
+    const right = b.fields[briefKey].value
+    return left !== null && right !== null && key(left) === key(right)
+  })
+}
 
+function mergeOneBrief(existing: Brief, incoming: Brief): { brief: Brief; contradictions: Contradiction[] } {
   const contradictions: Contradiction[] = []
   const fields = { ...existing.fields }
   for (const briefKey of Object.keys(fields) as BriefFieldKey[]) {
@@ -68,13 +74,18 @@ function mergeBrief(
     fields[briefKey] = merged.field
     if (merged.contradiction) {
       contradictions.push(
-        contradictionOf({ type: 'brief', key: briefKey }, existing.fields[briefKey], merged.contradiction),
+        contradictionOf(
+          { type: 'brief', briefId: existing.id, key: briefKey },
+          existing.fields[briefKey],
+          merged.contradiction,
+        ),
       )
     }
   }
 
   return {
     brief: {
+      ...existing,
       fields,
       deliverables: addUnique(existing.deliverables, incoming.deliverables),
       constraints: addUnique(existing.constraints, incoming.constraints),
@@ -85,24 +96,51 @@ function mergeBrief(
   }
 }
 
+// Each incoming brief either matches one already known (merged field by field into it) or joins the
+// list as its own card - the same "add, never silently overwrite" rule as tasks and meetings. Folded
+// one at a time, so two distinct new briefs pasted in the same message both end up as separate cards.
+function mergeBriefs(existing: Brief[], incoming: Brief[]): { briefs: Brief[]; contradictions: Contradiction[] } {
+  let briefs = existing
+  const contradictions: Contradiction[] = []
+  for (const fresh of incoming) {
+    const index = briefs.findIndex((brief) => sameBrief(brief, fresh))
+    if (index === -1) {
+      briefs = [...briefs, fresh]
+      continue
+    }
+    const merged = mergeOneBrief(briefs[index], fresh)
+    briefs = briefs.map((brief, i) => (i === index ? merged.brief : brief))
+    contradictions.push(...merged.contradictions)
+  }
+  return { briefs, contradictions }
+}
+
 function sameTask(existing: Task, incoming: Task): boolean {
   return key(existing.quote.value) === key(incoming.quote.value) || key(existing.title) === key(incoming.title)
+}
+
+// A message that is essentially one sentence is that sentence typed on purpose. A deleted card must not
+// come back when a long list is pasted again, but typing it again by itself is a new card.
+function typedOnPurpose(inputText: string, quote: string | null): boolean {
+  const text = inputText.trim()
+  return text.length > 0 && (quote ?? '').length / text.length >= 0.8
 }
 
 function mergeTasks(
   existing: Task[],
   incoming: Task[],
+  inputText: string,
 ): { tasks: Task[]; contradictions: Contradiction[] } {
   const contradictions: Contradiction[] = []
   const tasks = [...existing]
 
   for (const fresh of incoming) {
-    const index = tasks.findIndex((task) => sameTask(task, fresh))
+    const index = tasks.findIndex((task) => !task.deleted && sameTask(task, fresh))
     if (index === -1) {
-      tasks.push(fresh)
+      const buried = tasks.some((task) => task.deleted && sameTask(task, fresh))
+      if (!buried || typedOnPurpose(inputText, fresh.quote.value)) tasks.push(fresh)
       continue
     }
-    if (tasks[index].deleted) continue
     let known = tasks[index]
     for (const fieldKey of ['dueDate', 'dueTime'] as const) {
       const merged = mergeField(known[fieldKey], fresh[fieldKey])
@@ -130,17 +168,18 @@ function sameMeeting(existing: Meeting, incoming: Meeting): boolean {
 function mergeMeetings(
   existing: Meeting[],
   incoming: Meeting[],
+  inputText: string,
 ): { meetings: Meeting[]; contradictions: Contradiction[] } {
   const contradictions: Contradiction[] = []
   const meetings = [...existing]
 
   for (const fresh of incoming) {
-    const index = meetings.findIndex((meeting) => sameMeeting(meeting, fresh))
+    const index = meetings.findIndex((meeting) => !meeting.deleted && sameMeeting(meeting, fresh))
     if (index === -1) {
-      meetings.push(fresh)
+      const buried = meetings.some((meeting) => meeting.deleted && sameMeeting(meeting, fresh))
+      if (!buried || typedOnPurpose(inputText, fresh.quote.value)) meetings.push(fresh)
       continue
     }
-    if (meetings[index].deleted) continue
     let known = meetings[index]
     for (const fieldKey of ['date', 'startTime', 'endTime'] as const) {
       const merged = mergeField(known[fieldKey], fresh[fieldKey])
@@ -163,18 +202,18 @@ function mergeContradictions(open: Contradiction[], fresh: Contradiction[]): Con
   return [...byId.values()]
 }
 
-export function mergeExtraction(workspace: Workspace, extraction: Extraction): Workspace {
-  const brief = mergeBrief(workspace.brief, extraction.brief)
-  const tasks = mergeTasks(workspace.tasks, extraction.tasks)
-  const meetings = mergeMeetings(workspace.meetings, extraction.meetings)
+export function mergeExtraction(workspace: Workspace, extraction: Extraction, inputText = ''): Workspace {
+  const briefs = mergeBriefs(workspace.briefs, extraction.briefs)
+  const tasks = mergeTasks(workspace.tasks, extraction.tasks, inputText)
+  const meetings = mergeMeetings(workspace.meetings, extraction.meetings, inputText)
 
   return {
     ...workspace,
-    brief: brief.brief,
+    briefs: briefs.briefs,
     tasks: tasks.tasks,
     meetings: meetings.meetings,
     contradictions: mergeContradictions(workspace.contradictions, [
-      ...brief.contradictions,
+      ...briefs.contradictions,
       ...tasks.contradictions,
       ...meetings.contradictions,
     ]),

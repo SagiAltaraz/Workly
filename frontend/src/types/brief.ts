@@ -19,7 +19,10 @@ export interface BriefItem {
 
 export type BriefListKey = 'deliverables' | 'constraints' | 'suggestions' | 'missingDetails'
 
+// A workspace can hold more than one brief (more than one client request pasted in). Each one is its
+// own card, and gets matched by client/campaign/message when new text merges into it.
 export interface Brief {
+  id: string
   fields: Record<BriefFieldKey, Field>
   deliverables: BriefItem[]
   constraints: BriefItem[]

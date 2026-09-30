@@ -81,3 +81,37 @@
   border-radius: 16px;
   background: var(--surface);
 }
+
+/* While a card is being dragged, every column shows that it can receive it. */
+.board-column-droppable {
+  outline: 2px dashed var(--border);
+  outline-offset: -2px;
+}
+
+.board-column-over.board-column-droppable {
+  outline: 2px dashed var(--primary);
+}
+
+/* One card and the strip around it that shows where a dragged card would land. */
+.board-slot {
+  position: relative;
+}
+
+.board-slot-before::before,
+.board-slot-after::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--primary);
+  z-index: 2;
+}
+
+.board-slot-before::before {
+  inset-block-start: -9px;
+}
+
+.board-slot-after::after {
+  inset-block-end: -9px;
+}

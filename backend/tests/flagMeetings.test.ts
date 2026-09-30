@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { flagMeetings } from '../src/pipeline/flagMeetings'
-import { dedupeMeetingsAgainstTasks } from '../src/pipeline/dedupe'
-import { makeMeeting, makeTask } from './helpers'
+import { makeMeeting } from './helpers'
 
 describe('flagMeetings', () => {
   it('flags overlapping meetings on the same day, both ways', () => {
@@ -50,23 +49,3 @@ describe('flagMeetings', () => {
   })
 })
 
-describe('dedupeMeetingsAgainstTasks', () => {
-  const task = makeTask({ quote: 'יש לי פגישת צוות ב-10:00 עד 10:20. נעבור על מה שכל אחד צריך לסיים היום.' })
-
-  it('drops a meeting whose quote overlaps a task quote heavily', () => {
-    const { kept, dropped } = dedupeMeetingsAgainstTasks(
-      [makeMeeting({ topic: 'פגישת צוות', quote: 'יש לי פגישת צוות ב-10:00 עד 10:20.' })],
-      [task],
-    )
-    expect(kept).toEqual([])
-    expect(dropped).toHaveLength(1)
-  })
-
-  it('keeps a meeting that is a different commitment', () => {
-    const { kept } = dedupeMeetingsAgainstTasks(
-      [makeMeeting({ topic: 'בית הדפוס', quote: 'שיחה עם בית הדפוס על ההדפסה ועל מועד האספקה.' })],
-      [task],
-    )
-    expect(kept).toHaveLength(1)
-  })
-})

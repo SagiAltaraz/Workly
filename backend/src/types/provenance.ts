@@ -14,6 +14,7 @@ export interface Field<T = string> {
   span: SourceSpan | null
   verified: boolean
   editedByUser: boolean
-  // Why a value is missing or unresolved, in Hebrew, for the UI.
+  // In Hebrew, for the UI: why a value is missing or unresolved (which becomes a question), or how an
+  // inferred value was read (for instance a spelling slip that was corrected).
   note: string | null
 }

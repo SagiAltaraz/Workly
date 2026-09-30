@@ -73,12 +73,7 @@
   height: 24px;
 }
 
-@media (max-width: 720px) {
-  .app-clock {
-    display: none;
-  }
-}
-
+.header-demo-button,
 .header-calendar-button {
   display: inline-flex;
   align-items: center;
@@ -92,7 +87,29 @@
   font-weight: 600;
 }
 
+.header-demo-button:hover,
 .header-calendar-button:hover {
   border-color: var(--primary);
   color: var(--primary);
+}
+
+.header-demo-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.header-demo-button-active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.app-reference-note {
+  margin-inline-start: 10px;
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 13px;
+  font-weight: 600;
 }

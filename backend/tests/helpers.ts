@@ -1,5 +1,6 @@
 import type { CommandSignal } from '../src/agents/commands/commands.schema'
 import type { Extractor } from '../src/agents/extractor'
+import type { Brief, BriefFieldKey } from '../src/types/brief'
 import type { Meeting } from '../src/types/meeting'
 import type { Field } from '../src/types/provenance'
 import type { Task, TaskSignals } from '../src/types/task'
@@ -26,6 +27,7 @@ export const noSignals: TaskSignals = {
   canWait: null,
   notUrgent: null,
   listedUnder: null,
+  dayPart: null,
 }
 
 interface TaskOptions {
@@ -34,6 +36,8 @@ interface TaskOptions {
   dueDate?: string | null
   dueTime?: string | null
   signals?: Partial<TaskSignals>
+  // The words that tie the task to a meeting, e.g. "לפגישה עם שגיא".
+  meetingPhrase?: string
 }
 
 export function makeTask(options: TaskOptions = {}): Task {
@@ -45,6 +49,8 @@ export function makeTask(options: TaskOptions = {}): Task {
     dueDate: field(options.dueDate ?? null),
     dueTime: field(options.dueTime ?? null),
     signals: { ...noSignals, ...options.signals },
+    meetingLink: options.meetingPhrase ? { phrase: options.meetingPhrase, meetingId: null } : null,
+    deadline: { date: null, time: null, meetingId: null },
     done: false,
     deleted: false,
     blocked: false,
@@ -76,10 +82,35 @@ export function makeMeeting(options: MeetingOptions = {}): Meeting {
     startTime: field(options.start ?? null),
     endTime: field(options.end ?? null),
     participants: [],
+    dayPart: null,
     awaitingScheduling: false,
     weekdayMismatch: false,
     conflictsWith: [],
     deleted: false,
+  }
+}
+
+const emptyBriefFieldKeys: BriefFieldKey[] = ['client', 'campaign', 'message', 'audience', 'tone', 'deadline', 'launchDate']
+
+interface BriefOptions {
+  id?: string
+  client?: string
+  campaign?: string
+  message?: string
+}
+
+export function makeBrief(options: BriefOptions = {}): Brief {
+  const fields = Object.fromEntries(emptyBriefFieldKeys.map((key) => [key, field(null)])) as Brief['fields']
+  if (options.client) fields.client = field(options.client)
+  if (options.campaign) fields.campaign = field(options.campaign)
+  if (options.message) fields.message = field(options.message)
+  return {
+    id: options.id ?? options.client ?? options.campaign ?? 'brief',
+    fields,
+    deliverables: [],
+    constraints: [],
+    suggestions: [],
+    missingDetails: [],
   }
 }
 
@@ -91,36 +122,22 @@ export function emptyWorkspace(): Workspace {
     referenceDate: null,
     referenceDateOrigin: null,
     sources: [],
-    brief: null,
+    briefs: [],
     tasks: [],
     meetings: [],
     contradictions: [],
     dismissedQuestionIds: [],
+    cardOrder: [],
     activity: [],
     questions: [],
   }
-}
-
-export const emptyBriefSignals = {
-  containsBrief: false,
-  client: null,
-  campaign: null,
-  message: null,
-  audience: null,
-  tone: null,
-  deadline: null,
-  launchDate: null,
-  deliverables: [],
-  constraints: [],
-  suggestions: [],
-  missingDetails: [],
 }
 
 // Fixed answers instead of a model: the whole deterministic pipeline runs for real.
 export function stubExtractor(parts: Partial<Extractor> = {}): Extractor {
   return {
     extractCommands: async () => [],
-    extractBrief: async () => emptyBriefSignals,
+    extractBrief: async () => [],
     extractTasks: async () => [],
     extractMeetings: async () => [],
     ...parts,

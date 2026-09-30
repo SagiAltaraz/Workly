@@ -123,3 +123,26 @@
   align-items: center;
   gap: 6px;
 }
+
+.board-card-dragging {
+  opacity: 0.4;
+}
+
+.board-card[draggable='true'] {
+  -webkit-user-drag: element;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.board-card {
+  cursor: pointer;
+}
+
+.board-card:hover {
+  box-shadow: 0 2px 4px rgba(20, 24, 40, 0.08), 0 10px 26px rgba(20, 24, 40, 0.1);
+}
+
+.board-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

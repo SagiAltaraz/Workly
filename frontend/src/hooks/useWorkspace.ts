@@ -14,6 +14,8 @@ import type { Workspace } from '../types/workspace'
 
 const idKey = 'workly.workspaceId'
 const referenceKey = 'workly.userReferenceDate'
+// Present only while looking at the demo: the workspace to go back to. Its presence *is* "in demo mode".
+const beforeDemoKey = 'workly.beforeDemoWorkspaceId'
 
 function readStorage(key: string): string | null {
   try {
@@ -61,6 +63,8 @@ export function useWorkspace() {
   const [commandResults, setCommandResults] = useState<CommandResult[]>([])
   const [notice, setNotice] = useState<Notice | null>(null)
   const [userReferenceDate, setUserReferenceDateState] = useState<string | null>(() => readStorage(referenceKey))
+  const [isDemo, setIsDemo] = useState(() => readStorage(beforeDemoKey) !== null)
+  const [demoLoading, setDemoLoading] = useState(false)
   const booted = useRef(false)
 
   const adopt = useCallback((next: Workspace) => {
@@ -160,6 +164,13 @@ export function useWorkspace() {
 
     addTask: (task: NewTask) => mutate((id) => workspaceApi.addTask(id, task)),
     patchTask: (taskId: string, patch: TaskPatch) => mutate((id) => workspaceApi.patchTask(id, taskId, patch)),
+    orderCards: (ids: string[]) => mutate((id) => workspaceApi.setCardOrder(id, ids), { announce: true }),
+
+    // Moving a card is visible on the board, but easy to regret, so it offers to undo.
+    moveTask: (taskId: string, patch: TaskPatch) =>
+      mutate((id) => workspaceApi.patchTask(id, taskId, patch), { announce: true }),
+    moveMeeting: (meetingId: string, patch: MeetingPatch) =>
+      mutate((id) => workspaceApi.patchMeeting(id, meetingId, patch), { announce: true }),
     deleteTask: (taskId: string) => mutate((id) => workspaceApi.deleteTask(id, taskId), { announce: true }),
     restoreTask: (taskId: string) => mutate((id) => workspaceApi.restoreTask(id, taskId)),
 
@@ -169,10 +180,11 @@ export function useWorkspace() {
     deleteMeeting: (meetingId: string) => mutate((id) => workspaceApi.deleteMeeting(id, meetingId), { announce: true }),
     restoreMeeting: (meetingId: string) => mutate((id) => workspaceApi.restoreMeeting(id, meetingId)),
 
-    patchBriefField: (key: BriefFieldKey, value: string | null) =>
-      mutate((id) => workspaceApi.patchBriefField(id, key, value)),
-    addBriefItem: (list: 'deliverables' | 'constraints', text: string) =>
-      mutate((id) => workspaceApi.addBriefItem(id, list, text)),
+    addBrief: () => mutate((id) => workspaceApi.addBrief(id)),
+    patchBriefField: (briefId: string, key: BriefFieldKey, value: string | null) =>
+      mutate((id) => workspaceApi.patchBriefField(id, briefId, key, value)),
+    addBriefItem: (briefId: string | null, list: 'deliverables' | 'constraints', text: string) =>
+      mutate((id) => workspaceApi.addBriefItem(id, briefId, list, text)),
     editBriefItem: (itemId: string, text: string) => mutate((id) => workspaceApi.editBriefItem(id, itemId, text)),
     deleteBriefItem: (itemId: string) => mutate((id) => workspaceApi.deleteBriefItem(id, itemId), { announce: true }),
     promoteSuggestion: (itemId: string, into: 'deliverables' | 'constraints') =>
@@ -201,6 +213,37 @@ export function useWorkspace() {
         setCommandResults([])
       } catch (error) {
         setNotice({ text: messageOf(error), undoable: false })
+      }
+    },
+
+    isDemo,
+    demoLoading,
+    // First click: remember the current workspace, switch to the demo (seeded once from the
+    // assignment's own texts, cached after that). Second click: switch back to what was remembered.
+    toggleDemo: async () => {
+      if (demoLoading) return
+      setDemoLoading(true)
+      try {
+        const before = readStorage(beforeDemoKey)
+        if (before === null) {
+          // Fetch first; only remember "before" and flip the flag once the demo actually loaded.
+          const demo = await workspaceApi.demo()
+          if (workspace) writeStorage(beforeDemoKey, workspace.id)
+          adopt(demo)
+          setIsDemo(true)
+        } else {
+          const restored = await workspaceApi.get(before).catch((error) => {
+            if (error instanceof ApiError && error.status === 404) return null
+            throw error
+          })
+          adopt(restored ?? (await workspaceApi.create()))
+          writeStorage(beforeDemoKey, null)
+          setIsDemo(false)
+        }
+      } catch (error) {
+        setNotice({ text: messageOf(error), undoable: false })
+      } finally {
+        setDemoLoading(false)
       }
     },
 

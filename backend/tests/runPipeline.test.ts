@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { runPipeline } from '../src/pipeline/runPipeline'
 import type { StageEvent } from '../src/types/pipeline'
-import { emptyBriefSignals, emptyWorkspace, stubExtractor } from './helpers'
+import { emptyWorkspace, stubExtractor } from './helpers'
 
 const now = new Date('2026-09-27T09:00:00Z')
 
@@ -24,6 +24,7 @@ const taskSignal = (overrides: object) => ({
   condition: null,
   canWait: null,
   notUrgent: null,
+  relatedMeetingText: null,
   ...overrides,
 })
 
@@ -124,9 +125,11 @@ describe('runPipeline', () => {
     expect(source.text.slice(task.quote.span!.start, task.quote.span!.end)).toBe(task.quote.value)
   })
 
-  it('collapses a meeting that is really a task into the task', async () => {
+  it('a meeting with a time goes on the calendar and the plain task that repeated it is dropped', async () => {
     const { workspace, events } = await run()
-    expect(workspace.meetings).toHaveLength(0)
+    expect(workspace.meetings.map((meeting) => meeting.topic)).toEqual(['פגישת צוות'])
+    expect(workspace.meetings[0].startTime.value).toBe('10:00')
+    expect(workspace.tasks.some((task) => task.title === 'פגישת צוות')).toBe(false)
     expect(events.find((e) => e.stage === 'validate' && e.status === 'done')?.detail).toContain('אוחדו')
   })
 
@@ -157,8 +160,7 @@ describe('runPipeline', () => {
 
   it('shows no brief and no brief questions when the text holds none', async () => {
     const { workspace } = await run()
-    expect(workspace.brief).toBeNull()
-    expect(emptyBriefSignals.containsBrief).toBe(false)
+    expect(workspace.briefs).toHaveLength(0)
   })
 })
 
@@ -251,5 +253,52 @@ describe('runPipeline — a description mistaken for an instruction', () => {
     expect(result.commandResults).toEqual([])
     expect(seen[0]).toContain('פגישה עם הלקוח')
     expect(result.workspace.meetings).toHaveLength(0)
+  })
+})
+
+describe('runPipeline — a line typed into the chat', () => {
+  const chatExtractor = stubExtractor({
+    extractTasks: async () => [
+      taskSignal({ title: 'לדבר עם נעה', quote: 'אני רוצה לדבר עם נעה לפני 19:00', sectionHeading: null, dueTimeText: 'לפני 19:00' }),
+      taskSignal({ title: 'לסדר ארכיב', quote: 'לסדר ארכיב', sectionHeading: null }),
+      taskSignal({ title: 'לסגור דוח', quote: 'לסגור דוח לפני 12:00', sectionHeading: 'משימות להמשך השבוע', dueTimeText: 'לפני 12:00' }),
+    ],
+  })
+  const text = 'אני רוצה לדבר עם נעה לפני 19:00\nלסדר ארכיב\nמשימות להמשך השבוע\nלסגור דוח לפני 12:00'
+
+  it('a task with an hour and no day is for today, and says how that was decided', async () => {
+    const result = await runPipeline(emptyWorkspace(), { text, userReferenceDate: null }, chatExtractor, () => undefined, { now })
+    const task = result.workspace.tasks.find((item) => item.title === 'לדבר עם נעה')!
+    expect(task.dueDate).toMatchObject({ value: '2026-09-27', status: 'inferred', verified: true })
+    expect(task.bucket).toBe('today')
+    expect(task.rule).toBe('p2Today')
+    expect(task.reason).toContain('19:00')
+  })
+
+  it('a task with neither a day nor an hour is for today, and says how that was decided', async () => {
+    const result = await runPipeline(emptyWorkspace(), { text, userReferenceDate: null }, chatExtractor, () => undefined, { now })
+    const task = result.workspace.tasks.find((item) => item.title === 'לסדר ארכיב')!
+    expect(task.dueDate).toMatchObject({ value: '2026-09-27', status: 'inferred', verified: true })
+    expect(task.dueDate.note).toContain('להיום')
+    expect(task.bucket).toBe('today')
+  })
+
+  it('an hour under a heading that already placed the task does not pull it to today', async () => {
+    const result = await runPipeline(emptyWorkspace(), { text, userReferenceDate: null }, chatExtractor, () => undefined, { now })
+    const task = result.workspace.tasks.find((item) => item.title === 'לסגור דוח')!
+    expect(task.dueDate.value).toBeNull()
+    expect(task.bucket).toBe('week')
+  })
+
+  it('tells the person where each new card landed', async () => {
+    const result = await runPipeline(emptyWorkspace(), { text, userReferenceDate: null }, chatExtractor, () => undefined, { now })
+    expect(result.label).toContain('נוספה משימה "לדבר עם נעה" ← היום, עד 19:00')
+    expect(result.label).toContain('נוספה משימה "לסדר ארכיב" ← היום')
+    expect(result.label).toContain('נוספה משימה "לסגור דוח" ← השבוע הקרוב')
+  })
+
+  it('says so when the message held nothing to add', async () => {
+    const result = await runPipeline(emptyWorkspace(), { text: 'שלום מה נשמע', userReferenceDate: null }, stubExtractor(), () => undefined, { now })
+    expect(result.label).toContain('לא זוהו')
   })
 })

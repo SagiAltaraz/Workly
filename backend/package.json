@@ -8,7 +8,9 @@
     "dev": "tsx watch src/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "demo": "tsx src/scripts/demo.ts"
+    "demo": "tsx src/scripts/demo.ts",
+    "trace": "tsx src/scripts/trace.ts",
+    "eval": "tsx src/scripts/eval.ts"
   },
   "dependencies": {
     "cors": "^2.8.6",

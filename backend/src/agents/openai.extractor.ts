@@ -1,5 +1,5 @@
 import OpenAI from 'openai'
-import { briefSignalsSchema, type BriefSignals } from './brief/brief.schema'
+import { briefSignalsSchema, type BriefSignal } from './brief/brief.schema'
 import { briefSystemPrompt } from './brief/brief.prompt'
 import { commandsSignalsSchema, type CommandSignal } from './commands/commands.schema'
 import { commandsSystemPrompt } from './commands/commands.prompt'
@@ -26,8 +26,8 @@ export function createOpenAiExtractor(apiKey: string, model: string): Extractor 
       return result.commands
     },
 
-    extractBrief({ text }: ExtractionInput): Promise<BriefSignals> {
-      return runAgent({
+    async extractBrief({ text }: ExtractionInput): Promise<BriefSignal[]> {
+      const result = await runAgent({
         client,
         model,
         systemPrompt: briefSystemPrompt,
@@ -35,6 +35,7 @@ export function createOpenAiExtractor(apiKey: string, model: string): Extractor 
         schema: briefSignalsSchema,
         schemaName: 'briefSignals',
       })
+      return result.briefs
     },
 
     async extractTasks({ text }: ExtractionInput): Promise<TaskSignal[]> {

@@ -17,6 +17,7 @@ export const taskSignalSchema = z.object({
   condition: z.string().nullable(),
   canWait: canWait.nullable(),
   notUrgent: z.string().nullable(),
+  relatedMeetingText: z.string().nullable(),
 })
 
 export const tasksSignalsSchema = z.object({

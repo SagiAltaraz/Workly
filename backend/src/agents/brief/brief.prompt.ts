@@ -3,12 +3,13 @@ import { readingRules } from '../shared.prompt'
 export const briefSystemPrompt = `
 ${readingRules}
 
-Task: the input may contain a client brief. Read it and fill the fields below.
-If the input is not a brief (for example only a task list or a meeting list), set
-containsBrief to false, every nullable field to null and every list to [].
+Task: the input may contain one or more client briefs. Report one entry in "briefs" for each
+SEPARATE brief you find - a paragraph about a different client, or a different campaign, is a
+different brief, even when several are pasted into the same message one after another. If the
+input holds no brief at all (for example only a task list or a meeting list), return
+{"briefs": []}. Never merge two different clients' or campaigns' facts into one entry.
 
-Fields (use exactly these camelCase names):
-- containsBrief: true only if the text really is a brief from or about a client/campaign.
+Fields of each brief (use exactly these camelCase names):
 - client: the client or brand name as written. value = the name only.
 - campaign: which campaign this is, as written.
 - message: the campaign message or slogan, as written.
@@ -35,11 +36,12 @@ When a line has the form "label: content", the value is only the content after t
 Example: for the text "הפרינט: A4, דו-צדדי" the value is "A4, דו-צדדי" (not "פרינט A4, דו-צדדי").
 Example: when the text says "שלט אחד גדול על הכביש. הגדול הוא 8 על 3 מטר", make two entries,
 value "שלט אחד גדול על הכביש" and value "הגדול הוא 8 על 3 מטר", each with its own sentence as quote.
+A deliverable, constraint, suggestion or missing detail belongs to the brief its own sentence is
+part of - never attach it to a different brief just because both appeared in the same message.
 
-Example (shape only, do not reuse the content):
+Example with one brief (shape only, do not reuse the content):
 input: "הלקוח של קפה נועם צריך שלט אחד גדול. הקמפיין הוא של פתיחת סניף. הקבצים עד יום ראשון, 4.10.2026."
-output: {
-  "containsBrief": true,
+output: { "briefs": [ {
   "client": { "value": "קפה נועם", "quote": "הלקוח של קפה נועם צריך שלט אחד גדול." },
   "campaign": { "value": "פתיחת סניף", "quote": "הקמפיין הוא של פתיחת סניף." },
   "message": null, "audience": null, "tone": null,
@@ -49,5 +51,12 @@ output: {
   "constraints": [],
   "suggestions": ["לוודא מול בית הדפוס את מפרט הקבצים לפני העבודה"],
   "missingDetails": ["מידות השלט"]
-}
+} ] }
+
+Example with two briefs pasted in one message (shape only): for
+"בריף שקיבלתי\\nהלקוח של קפה נועם צריך שלט אחד גדול.\\nבריף שקיבלתי\\nהלקוח של מספרת דניאל צריך פליירים לפתיחה."
+report TWO entries in "briefs": one with client "קפה נועם" and its own deliverable, a second with
+client "מספרת דניאל" and its own deliverable - never one entry mixing both clients' deliverables.
+
+Example with no brief: for a plain task list or meeting list, return {"briefs": []}.
 `.trim()

@@ -4,37 +4,51 @@ import type { Meeting } from '../../types/meeting'
 import { buildIcs, downloadIcs } from '../../utils/ics'
 import { timeRange } from '../../utils/meetingTime'
 import { relativeLabel } from '../../utils/isoDate'
+import { dayPartLabels } from '../../utils/labels'
 import FactChip from '../common/FactChip'
-import { CalendarIcon, ClockIcon, WarningIcon } from '../common/Icons'
+import { CalendarIcon, ClockIcon, GripIcon, WarningIcon } from '../common/Icons'
 import Menu from '../common/Menu'
 import QuoteBox from '../common/QuoteBox'
+import { dragProps } from './cardDrag'
+import { openProps } from './cardOpen'
 import './Card.css'
 
 interface MeetingCardProps {
   meeting: Meeting
   referenceDate: string
   otherTopics: Map<string, string>
+  isDragged: boolean
+  onDragStart: () => void
+  onDragEnd: () => void
 }
 
-export default function MeetingCard({ meeting, referenceDate, otherTopics }: MeetingCardProps) {
-  const { app } = useApp()
+export default function MeetingCard({ meeting, referenceDate, otherTopics, isDragged, onDragStart, onDragEnd }: MeetingCardProps) {
+  const { app, openDetail } = useApp()
   const edit = useEditRequests()
   const range = timeRange(meeting)
   const date = meeting.date.value
 
   const warnings = [
-    meeting.awaitingScheduling && 'עדיין בלי מועד מתואם',
+    meeting.awaitingScheduling && (meeting.dayPart ? `עדיין בלי שעה מדויקת (${dayPartLabels[meeting.dayPart]})` : 'עדיין בלי מועד מתואם'),
     meeting.weekdayMismatch && `היום שכתוב ("${meeting.weekdayWritten}") לא תואם לתאריך`,
     ...meeting.conflictsWith.map((id) => `חופפת ל"${otherTopics.get(id) ?? 'פגישה אחרת'}"`),
   ].filter((text): text is string => typeof text === 'string')
 
   return (
-    <article className="board-card tone-purple">
+    <article
+      className={`board-card tone-purple${isDragged ? ' board-card-dragging' : ''}`}
+      {...dragProps(meeting.id, onDragStart, onDragEnd)}
+      {...openProps(() => openDetail({ kind: 'meeting', id: meeting.id }))}
+    >
       <header className="board-card-header">
         <span className="board-badge">פגישה</span>
         <div className="board-card-tools">
+          <span className="board-card-grip" aria-hidden="true">
+            <GripIcon size={16} />
+          </span>
           <Menu
             items={[
+              { label: 'פתיחה והרחבה', onSelect: () => openDetail({ kind: 'meeting', id: meeting.id }) },
               { label: 'עריכת נושא', onSelect: () => edit.meetingTopic(meeting) },
               { label: 'עריכת משתתפים', onSelect: () => edit.meetingParticipants(meeting) },
               { label: 'עריכת תאריך', onSelect: () => edit.meetingField(meeting, 'date') },

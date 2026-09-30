@@ -17,7 +17,7 @@ export interface SourceInput {
 
 // The one place a field can be addressed from outside (edits, contradiction answers).
 export type FieldTarget =
-  | { type: 'brief'; key: BriefFieldKey }
+  | { type: 'brief'; briefId: string; key: BriefFieldKey }
   | { type: 'task'; id: string; key: 'dueDate' | 'dueTime' }
   | { type: 'meeting'; id: string; key: 'date' | 'startTime' | 'endTime' }
 
@@ -42,11 +42,15 @@ export interface Workspace {
   referenceDate: string | null
   referenceDateOrigin: ReferenceDateOrigin | null
   sources: SourceInput[]
-  brief: Brief | null
+  // Every brief pasted in, each its own card. Matched and merged by client/campaign/message.
+  briefs: Brief[]
   tasks: Task[]
   meetings: Meeting[]
   contradictions: Contradiction[]
   dismissedQuestionIds: string[]
+  // The person's own order of cards that have no hour (task and meeting ids). Cards with an hour
+  // stay where their hour puts them.
+  cardOrder: string[]
   activity: ActivityEntry[]
   // Derived after every change: gaps, mismatches, conflicts and open contradictions.
   questions: Question[]

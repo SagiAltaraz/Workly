@@ -1,16 +1,19 @@
 import { randomUUID } from 'node:crypto'
 import type { Extractor } from '../agents/extractor'
 import { ValidationError } from '../errors'
+import type { Brief } from '../types/brief'
 import type { CommandResult } from '../types/command'
+import type { Meeting } from '../types/meeting'
 import type { Stage, StageEvent, StageStatus } from '../types/pipeline'
+import type { Bucket, Task } from '../types/task'
 import type { Workspace } from '../types/workspace'
-import { buildBrief } from './buildBrief'
+import { buildBriefs } from './buildBrief'
 import { buildMeetings } from './buildMeetings'
 import { buildTasks } from './buildTasks'
 import { classify, describeSegments, routeSegments } from './classify'
 import { applyCommands } from './commands/applyCommands'
 import { parseCommand } from './commands/parseCommand'
-import { dedupeMeetingsAgainstTasks } from './dedupe'
+import { collapseOverlappingClaims } from './dedupe'
 import type { Change } from './edits'
 import { mergeExtraction, type Extraction } from './merge'
 import { normalizeText } from './normalize'
@@ -65,11 +68,13 @@ export async function runPipeline(
 
   // The board keeps the last date a text or a user declared; a message with no date of its own
   // must not move today's board to the real clock. "Tomorrow" means tomorrow on that board.
-  const keepsReference = reference.origin === 'today' && workspace.referenceDate !== null
+  // A board that followed the real clock keeps following it, so only a date a text or a person declared is kept.
+  const keepsReference =
+    reference.origin === 'today' && workspace.referenceDate !== null && workspace.referenceDateOrigin !== 'today'
   const boardDate = keepsReference ? (workspace.referenceDate as string) : reference.date
 
   const inputId = randomUUID()
-  const context = { inputId, text }
+  const context = { inputId, text, now }
 
   // Instructions first: a sentence like "the meeting moved to 11:00" changes an existing item and
   // must not also be read as a new meeting.
@@ -118,23 +123,26 @@ export async function runPipeline(
 
   const [briefSignals, taskSignals, meetingSignals] = await Promise.all([
     stageRun('extractBrief', routed.brief, () => extractor.extractBrief({ text: routed.brief }), (r) =>
-      r.containsBrief ? 'נמצא בריף' : 'אין בריף',
+      r.length > 0 ? `${r.length} בריפים` : 'אין בריף',
     ),
     stageRun('extractTasks', routed.tasks, () => extractor.extractTasks({ text: routed.tasks }), (r) => `${r.length} משימות`),
     stageRun('extractMeetings', routed.meetings, () => extractor.extractMeetings({ text: routed.meetings }), (r) => `${r.length} פגישות`),
   ])
 
   emit('validate', 'running')
-  const brief = briefSignals ? buildBrief(context, briefSignals, boardDate) : null
-  const tasks = taskSignals ? buildTasks(context, taskSignals, boardDate) : []
+  const briefs = briefSignals ? buildBriefs(context, briefSignals, boardDate) : []
+  const allTasks = taskSignals ? buildTasks(context, taskSignals, boardDate) : []
   const allMeetings = meetingSignals ? buildMeetings(context, meetingSignals, boardDate) : []
-  const { kept: meetings, dropped } = dedupeMeetingsAgainstTasks(allMeetings, tasks)
-  const droppedNote = dropped.length > 0 ? `, ${dropped.length} פגישות כפולות למשימות אוחדו` : ''
-  emit('validate', 'done', `${tasks.length} משימות, ${meetings.length} פגישות${droppedNote}`)
+  const { tasks, meetings, droppedMeetings, droppedTasks } = collapseOverlappingClaims(allMeetings, allTasks)
+  const droppedNotes = [
+    droppedTasks > 0 && `${droppedTasks} משימות שחזרו על פגישה אוחדו`,
+    droppedMeetings > 0 && `${droppedMeetings} "פגישות" שהיו בעצם משימות הוסרו`,
+  ].filter(Boolean)
+  emit('validate', 'done', [`${tasks.length} משימות, ${meetings.length} פגישות`, ...droppedNotes].join(', '))
 
   emit('merge', 'running')
-  const extraction: Extraction = { brief, tasks, meetings }
-  const merged = mergeExtraction(applied.workspace, extraction)
+  const extraction: Extraction = { briefs, tasks, meetings }
+  const merged = mergeExtraction(applied.workspace, extraction, text)
   const withSource: Workspace = {
     ...merged,
     referenceDate: keepsReference ? workspace.referenceDate : reference.date,
@@ -157,14 +165,73 @@ export async function runPipeline(
   const result = recompute(withSource, now)
   emit('prioritize', 'done', `${result.questions.length} שאלות פתוחות`)
 
-  const foundInformation = tasks.length + meetings.length > 0 || brief !== null
-  const infoLabel = foundInformation
-    ? `נוסף מידע מהטקסט: ${[brief && 'בריף', tasks.length > 0 && `${tasks.length} משימות`, meetings.length > 0 && `${meetings.length} פגישות`].filter(Boolean).join(', ')}`
-    : null
-  const parts = [...applied.labels, ...(infoLabel ? [infoLabel] : [])]
+  const added = [...describeAdded(result, tasks, meetings, briefs), ...describeSkipped(result, tasks, meetings)]
+  const parts = [...applied.labels, ...added]
   return {
     workspace: result,
     commandResults: applied.results,
-    label: parts.length > 0 ? parts.join(' · ') : 'נוסף טקסט',
+    label: parts.length > 0 ? parts.join(' · ') : 'ההודעה נקראה, אבל לא זוהו בה משימות, פגישות, בריף או הוראות',
   }
+}
+
+const columnNames: Record<Bucket, string> = { today: 'היום', tomorrow: 'מחר', week: 'השבוע הקרוב', later: 'בהמשך' }
+
+// What was added and where it landed, so a person who typed a line can see what happened to it.
+function describeAdded(result: Workspace, tasks: Task[], meetings: Meeting[], briefs: Brief[]): string[] {
+  const parts: string[] = []
+  const taskById = new Map(result.tasks.map((task) => [task.id, task]))
+  const meetingById = new Map(result.meetings.map((meeting) => [meeting.id, meeting]))
+  const briefById = new Map(result.briefs.map((brief) => [brief.id, brief]))
+
+  for (const fresh of tasks) {
+    const task = taskById.get(fresh.id)
+    if (!task) continue
+    const place = task.blocked ? 'ממתין (חסומה)' : columnNames[task.bucket]
+    const hour = task.deadline.time ? `, עד ${task.deadline.time}` : ''
+    parts.push(`נוספה משימה "${task.title}" ← ${place}${hour}`)
+  }
+  for (const fresh of meetings) {
+    const meeting = meetingById.get(fresh.id)
+    if (!meeting) continue
+    const when = [meeting.date.value, meeting.startTime.value].filter(Boolean).join(' ')
+    parts.push(`נוספה פגישה "${meeting.topic}"${when ? ` ← ${when}` : ' ← ממתינה לתיאום'}`)
+  }
+  // A brief text that only enriched an existing card (matched by client/campaign/message) says
+  // nothing extra here, the same as a task or meeting that merely filled a gap in a known one.
+  for (const fresh of briefs) {
+    const brief = briefById.get(fresh.id)
+    if (!brief) continue
+    const name = brief.fields.client.value ?? brief.fields.campaign.value
+    parts.push(`נוסף בריף${name ? ` "${name}"` : ''}`)
+  }
+  return parts
+}
+
+// Cards the text mentioned that were not added, and why: the message was understood, so it must not look ignored.
+function describeSkipped(result: Workspace, tasks: Task[], meetings: Meeting[]): string[] {
+  const parts: string[] = []
+  const inResult = new Set([...result.tasks.map((task) => task.id), ...result.meetings.map((meeting) => meeting.id)])
+  // A live card with the same name is what the message repeated; a deleted one only if there is no live one.
+  const known = (topic: string, list: { title?: string; topic?: string; deleted: boolean }[]) => {
+    const same = list.filter((item) => (item.title ?? item.topic) === topic)
+    return same.find((item) => !item.deleted) ?? same[0]
+  }
+
+  for (const fresh of tasks.filter((task) => !inResult.has(task.id))) {
+    const twin = known(fresh.title, result.tasks)
+    parts.push(
+      twin?.deleted
+        ? `משימה "${fresh.title}" נמחקה קודם, ולכן לא נוספה שוב (אפשר לשחזר אותה מ"נמחקו")`
+        : `משימה "${fresh.title}" כבר קיימת, ולכן לא נוספה שוב`,
+    )
+  }
+  for (const fresh of meetings.filter((meeting) => !inResult.has(meeting.id))) {
+    const twin = known(fresh.topic, result.meetings)
+    parts.push(
+      twin?.deleted
+        ? `פגישה "${fresh.topic}" נמחקה קודם, ולכן לא נוספה שוב (אפשר לשחזר אותה מ"נמחקו")`
+        : `פגישה "${fresh.topic}" כבר קיימת, ולכן לא נוספה שוב`,
+    )
+  }
+  return parts
 }

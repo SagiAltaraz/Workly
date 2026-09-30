@@ -1,6 +1,6 @@
 import type { BriefFieldKey } from '../types/brief'
 import type { FactStatus } from '../types/provenance'
-import type { PriorityTier } from '../types/task'
+import type { DayPart, PriorityTier, Task } from '../types/task'
 import type { Stage } from '../types/pipeline'
 import type { ColumnId } from './buildBoard'
 
@@ -22,7 +22,7 @@ export const priorityLabels: Record<PriorityTier, string> = {
   p1: 'קריטי · P1',
   p2: 'היום · P2',
   p3: 'יכול לחכות · P3',
-  p4: 'בהמשך · P4',
+  p4: 'לא להיום · P4',
 }
 
 export const briefFieldLabels: Record<BriefFieldKey, string> = {
@@ -65,8 +65,24 @@ export const stageOrder: Stage[] = [
 
 export const columnTitles: Record<ColumnId, string> = {
   today: 'היום',
+  tomorrow: 'מחר',
   week: 'השבוע הקרוב',
   blocked: 'ממתין',
   done: 'הושלם',
   later: 'בהמשך',
+}
+
+export const dayPartLabels: Record<DayPart, string> = {
+  morning: 'בבוקר',
+  noon: 'בצהריים',
+  afternoon: 'אחה״צ',
+  evening: 'בערב',
+  night: 'בלילה',
+}
+
+// "Not today" fits a task with a day ahead of it; a task with no day at all is simply undated.
+export function priorityLabel(task: Task): string {
+  if (!task.priority) return ''
+  const hasDay = (task.deadline.date ?? task.dueDate.value) !== null
+  return task.priority === 'p4' && !hasDay ? 'ללא תאריך · P4' : priorityLabels[task.priority]
 }

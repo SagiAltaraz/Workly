@@ -10,8 +10,7 @@ const quotedDate = z.object({
   quote: z.string(),
 })
 
-export const briefSignalsSchema = z.object({
-  containsBrief: z.boolean(),
+export const briefSignalSchema = z.object({
   client: quotedValue.nullable(),
   campaign: quotedValue.nullable(),
   message: quotedValue.nullable(),
@@ -25,4 +24,10 @@ export const briefSignalsSchema = z.object({
   missingDetails: z.array(z.string()),
 })
 
+// One entry per distinct brief found in the text. Empty when the text holds no brief at all.
+export const briefSignalsSchema = z.object({
+  briefs: z.array(briefSignalSchema),
+})
+
+export type BriefSignal = z.infer<typeof briefSignalSchema>
 export type BriefSignals = z.infer<typeof briefSignalsSchema>
