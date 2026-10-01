@@ -1,6 +1,7 @@
 import { useApp } from '../../context/AppContext'
 import { useEditRequests } from '../../hooks/useEditRequests'
 import type { Task } from '../../types/task'
+import { buildTaskIcs, downloadIcs } from '../../utils/ics'
 import { dayPartLabels, priorityLabel } from '../../utils/labels'
 import { relativeLabel } from '../../utils/isoDate'
 import FactChip from '../common/FactChip'
@@ -55,6 +56,7 @@ export default function TaskCard({ task, referenceDate, isDragged, onDragStart, 
               { label: 'עריכת שם', onSelect: () => edit.taskTitle(task) },
               { label: 'עריכת תאריך יעד', onSelect: () => edit.taskField(task, 'dueDate') },
               { label: 'עריכת שעת יעד', onSelect: () => edit.taskField(task, 'dueTime') },
+              ...(date ? [{ label: 'ייצוא ליומן (.ics)', onSelect: () => downloadIcs(`${task.title}.ics`, buildTaskIcs([task])) }] : []),
               { label: 'מחיקה', onSelect: () => void app.deleteTask(task.id) },
             ]}
           />

@@ -4,7 +4,7 @@ import type { Field } from '../types/provenance'
 import type { Task } from '../types/task'
 import type { Workspace } from '../types/workspace'
 import { buildBoard, meetingColumn, reorderedIds, sortCards, type BoardCard } from './buildBoard'
-import { buildIcs } from './ics'
+import { buildIcs, buildTaskIcs } from './ics'
 import { monthGrid, shiftMonth } from './calendarGrid'
 
 const field = (value: string | null): Field => ({
@@ -261,5 +261,30 @@ describe('buildIcs', () => {
     expect(ics).toContain('SUMMARY:פגישה\\, חשובה\\; דחופה')
     expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(1)
     expect(ics.endsWith('\r\n')).toBe(true)
+  })
+})
+
+describe('buildTaskIcs', () => {
+  it('turns a task with a time into a 30-minute block ending at the deadline', () => {
+    const ics = buildTaskIcs([task('להגיש דו"ח', { dueDate: field('2026-09-24'), dueTime: field('17:00') })])
+    expect(ics).toContain('DTSTART:20260924T170000')
+    expect(ics).toContain('DTEND:20260924T173000')
+    expect(ics).toContain('SUMMARY:להגיש דו"ח')
+  })
+
+  it('turns a task with only a date into an all-day reminder', () => {
+    const ics = buildTaskIcs([task('בלי שעה', { dueDate: field('2026-09-24') })])
+    expect(ics).toContain('DTSTART;VALUE=DATE:20260924')
+    expect(ics).toContain('DTEND;VALUE=DATE:20260925')
+  })
+
+  it('exports a task that only has a deadline inherited from a meeting', () => {
+    const ics = buildTaskIcs([task('הכנה', { deadline: { date: '2026-09-25', time: '09:00', meetingId: 'm' } })])
+    expect(ics).toContain('DTSTART:20260925T090000')
+  })
+
+  it('skips a task with no date at all', () => {
+    const ics = buildTaskIcs([task('בלי תאריך')])
+    expect(ics.match(/BEGIN:VEVENT/g)).toBeNull()
   })
 })

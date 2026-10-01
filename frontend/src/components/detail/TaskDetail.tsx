@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { TaskPatch } from '../../api/workspaceApi'
 import { useApp } from '../../context/AppContext'
+import { buildTaskIcs, downloadIcs } from '../../utils/ics'
 import { relativeLabel, todayInIsrael } from '../../utils/isoDate'
 import { priorityLabel } from '../../utils/labels'
 import { toneOfTask } from '../board/cardTone'
@@ -35,6 +36,7 @@ export default function TaskDetail({ taskId, onClose }: { taskId: string; onClos
 
   const badge = task.done ? 'בוצעה' : task.blocked ? 'חסומה' : priorityLabel(task) || 'משימה'
   const changed = title.trim() !== task.title || date !== (task.dueDate.value ?? '') || time !== (task.dueTime.value ?? '') || done !== task.done
+  const hasDeadline = (task.deadline.date ?? task.dueDate.value) !== null
 
   async function save(event: HTMLButtonElement) {
     if (!task) return
@@ -68,6 +70,11 @@ export default function TaskDetail({ taskId, onClose }: { taskId: string; onClos
           >
             מחיקה
           </button>
+          {hasDeadline && (
+            <button type="button" className="detail-secondary" onClick={() => downloadIcs(`${task.title}.ics`, buildTaskIcs([task]))}>
+              ייצוא ליומן
+            </button>
+          )}
           <span className="detail-spacer" />
           <button type="button" className="detail-secondary" onClick={(event) => closeDialogOf(event.currentTarget)}>
             ביטול
