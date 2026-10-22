@@ -1,7 +1,7 @@
 import type { Snapshot } from '../services/history'
 import type { Workspace } from '../types/workspace'
 import { normalizeStoredHistory, normalizeStoredWorkspace } from './normalize'
-import { pool } from './pool'
+import { isDatabaseReady, pool } from './pool'
 
 interface WorkspaceRow {
   state: unknown
@@ -14,6 +14,7 @@ export interface StoredWorkspace {
 }
 
 export async function upsertWorkspace(stored: StoredWorkspace): Promise<void> {
+  if (!isDatabaseReady()) return
   const { workspace, history } = stored
   await pool.query(
     `INSERT INTO workspaces (id, state, history, created_at, updated_at)
@@ -25,6 +26,7 @@ export async function upsertWorkspace(stored: StoredWorkspace): Promise<void> {
 }
 
 export async function loadAllWorkspaces(): Promise<StoredWorkspace[]> {
+  if (!isDatabaseReady()) return []
   const { rows } = await pool.query<WorkspaceRow>('SELECT state, history FROM workspaces')
   return rows.flatMap((row) => {
     const workspace = normalizeStoredWorkspace(row.state)

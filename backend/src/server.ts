@@ -25,7 +25,7 @@ app.use((_req, res: express.Response<ApiResponse<never>>) => {
 
 // Tells whoever started the app where to go. The UI address depends on how it was started, and the
 // server cannot tell, so both are listed.
-function startupBanner(restored: number): string {
+function startupBanner(restored: number, persistent: boolean): string {
   const model = env.openaiApiKey ? env.model : 'not configured (add OPENAI_API_KEY to .env)'
   return [
     '',
@@ -38,17 +38,19 @@ function startupBanner(restored: number): string {
     '',
     `   API:    http://localhost:${env.port}`,
     `   Model:  ${model}`,
-    `   Saved:  ${restored} workspaces restored from the database`,
+    persistent
+      ? `   Saved:  ${restored} workspaces restored from the database`
+      : '   Saved:  in memory only (no database found) - data is lost when the server stops',
     '────────────────────────────────────────────────────────',
     '',
   ].join('\n')
 }
 
 async function start() {
-  await initDatabase()
+  const persistent = await initDatabase()
   const restored = await hydrateWorkspaces()
   const server = app.listen(env.port, () => {
-    console.log(startupBanner(restored))
+    console.log(startupBanner(restored, persistent))
   })
 
   // Docker stops the container with SIGTERM; finish pending database writes first.
