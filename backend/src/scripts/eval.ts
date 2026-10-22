@@ -46,6 +46,21 @@ function check(workspace: Workspace, expectation: Expectation): string[] {
     case 'meetingCount':
       differ('מספר פגישות', expectation.count, meetings.length)
       break
+    case 'briefs': {
+      const briefs = workspace.briefs
+      if (briefs.length !== expectation.clients.length) return [`מספר בריפים: ציפיתי ל-${expectation.clients.length} וקיבלתי ${briefs.length}`]
+      for (const client of expectation.clients) {
+        const brief = briefs.find((item) => item.fields.client.value?.includes(client))
+        if (!brief) problems.push(`לא נמצא בריף של "${client}"`)
+        else {
+          const others = expectation.clients.filter((name) => name !== client)
+          const text = [...brief.deliverables, ...brief.constraints].map((item) => item.field.value).join(' ')
+          const leaked = others.filter((name) => text.includes(name))
+          if (leaked.length > 0) problems.push(`בריף "${client}" מכיל תוכן של ${leaked.join(', ')}`)
+        }
+      }
+      break
+    }
     case 'noQuestions':
       if (workspace.questions.length > 0) problems.push(`נשארו שאלות: ${workspace.questions.map((q) => q.text).join(' | ')}`)
       break

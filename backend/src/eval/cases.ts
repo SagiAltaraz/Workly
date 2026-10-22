@@ -33,6 +33,8 @@ export type Expectation =
   | { kind: 'taskCount'; count: number }
   | { kind: 'meetingCount'; count: number }
   | { kind: 'noQuestions' }
+  // Each text is a separate brief: the count, and the client of each (checked by inclusion).
+  | { kind: 'briefs'; clients: string[] }
 
 export interface EvalCase {
   name: string
@@ -45,6 +47,15 @@ export interface EvalCase {
 export const evalNow = new Date('2026-09-28T07:00:00Z')
 
 export const cases: EvalCase[] = [
+  {
+    name: 'שני בריפים בהודעה אחת = שני כרטיסים נפרדים',
+    messages: [
+      `בריף שקיבלתי מחנות האופנה "אורנה". קמפיין סוף עונה. תוצרים: באנר לאתר, מודעת פייסבוק. דדליין: 5.10.2026.
+
+בריף שקיבלתי מחנות הרהיטים "נועם". קמפיין השקה. תוצרים: קטלוג מודפס, שלט חוצות. דדליין: 12.10.2026.`,
+    ],
+    expect: [{ kind: 'briefs', clients: ['אורנה', 'נועם'] }],
+  },
   {
     name: 'מחרר (שגיאת כתיב) + שעה במילים',
     messages: ['מחרר צריך להתקשר לדני בשעה 9 וחצי'],
